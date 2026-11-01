@@ -62,7 +62,10 @@ class ResumeTests(TestCase):
         response = self.resume()
         self.assertEqual(response.context["attempt"], attempt)
         self.assertRemainingAbout(response, 35)
-        saved = [q["saved"] for q in response.context["questions"]]
+        saved = [
+            self.client.get(reverse("attempt-question", args=[attempt.pk, n])).context["saved"]
+            for n in range(1, 7)
+        ]
         self.assertEqual(saved, [o.pk for o in self.options[:4]] + [None, None])
 
     def test_IT_025_another_device_resumes_the_same_attempt(self):
@@ -71,7 +74,11 @@ class ResumeTests(TestCase):
         other_device.post(reverse("login"), {"email": "stu.a@pesu.pes.edu", "password": "Passw0rd!A"})
         response = self.resume(other_device)
         self.assertEqual(response.context["attempt"], attempt)
-        self.assertEqual(sum(q["saved"] is not None for q in response.context["questions"]), 3)
+        saved_count = sum(
+            other_device.get(reverse("attempt-question", args=[attempt.pk, n])).context["saved"] is not None
+            for n in range(1, 7)
+        )
+        self.assertEqual(saved_count, 3)
         self.assertEqual(Attempt.objects.filter(exam=self.exam, student=self.student).count(), 1)
 
     def test_FR_021_resume_still_works_after_the_window_closes_if_time_remains(self):

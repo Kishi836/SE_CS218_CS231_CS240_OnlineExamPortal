@@ -64,7 +64,7 @@ class TimerAndPayloadTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(response.json()["remaining_seconds"], 2998)
         self.assertLessEqual(response.json()["remaining_seconds"], 3000)
-        paper_response = self.client.get(f"/attempts/{self.attempt.pk}/")
+        paper_response = self.client.get(f"/attempts/{self.attempt.pk}/", follow=True)
         self.assertContains(paper_response, 'id="timer"')
 
     def test_remaining_seconds_never_returns_a_negative_value(self):

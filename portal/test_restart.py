@@ -87,8 +87,13 @@ class RestartTests(SimpleTestCase):
 
     def paper(self, opener):
         html = opener.open(f"{self.base}/attempts/{self.attempt_id}/").read().decode()
-        checked = {int(v) for v in re.findall(r'value="(\d+)" data-question="\d+" checked', html)}
         remaining = int(re.search(r'data-remaining="(-?\d+)"', html).group(1))
+        total_match = re.search(r'Question \d+ of (\d+)', html)
+        total = int(total_match.group(1)) if total_match else 1
+        checked = set()
+        for n in range(1, total + 1):
+            q_html = opener.open(f"{self.base}/attempts/{self.attempt_id}/q/{n}/").read().decode()
+            checked.update(int(v) for v in re.findall(r'value="(\d+)" data-question="\d+" checked', q_html))
         return checked, remaining
 
     def test_NFR_004_service_returns_within_60_s_and_the_attempt_resumes_intact(self):

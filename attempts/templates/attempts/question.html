@@ -1,0 +1,84 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ attempt.exam.title }} &middot; Question {{ n }}</title></head>
+<body>
+  {% include "_nav.html" %}
+  <h1>{{ attempt.exam.title }}</h1>
+  {% url 'attempt-remaining' attempt.pk as remaining_url %}
+  {% include "attempts/_timer.html" with remaining=expires_in remaining_url=remaining_url %}
+
+  {# FR-018: the palette. One link per question; its class and its text both carry the state (never colour alone, NFR-009). #}
+  <nav aria-label="Question palette" class="palette">
+    {% for number, state in cells %}
+      <a href="{% url 'attempt-question' attempt.pk number %}" class="cell {{ state }}"{% if number == n %} aria-current="page"{% endif %}>{{ number }}<span class="visually-hidden">Question {{ number }}, {% if state == "not-visited" %}Not visited{% elif state == "not-answered" %}Not answered{% elif state == "answered" %}Answered{% elif state == "marked" %}Marked for review{% endif %}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form id="question" data-answers="{% url 'attempt-answer' attempt.pk %}" data-expires-in="{{ expires_in }}">
+    {% csrf_token %}
+    <fieldset>
+      <legend>Question {{ n }} of {{ total }}. {{ question.stem }}</legend>
+      {% for o in question.options %}
+        <label><input type="radio" name="option" value="{{ o.id }}" data-question="{{ question.id }}"{% if o.id == saved %} checked{% endif %}> {{ o.text }}</label><br>
+      {% endfor %}
+      <label><input type="checkbox" data-flag="{{ question.id }}"{% if marked %} checked{% endif %}> Mark for review</label>
+      <button type="button" class="btn-ghost" data-clear="{{ question.id }}">Clear response</button>
+    </fieldset>
+  </form>
+
+  {% if n > 1 %}<a href="{% url 'attempt-question' attempt.pk n|add:'-1' %}">Previous</a>{% endif %}
+  {% if n < total %}<a href="{% url 'attempt-question' attempt.pk n|add:'1' %}">Next</a>{% endif %}
+
+  <form method="post" action="{% url 'attempt-submit' attempt.pk %}">
+    {% csrf_token %}
+    <button type="submit">Submit paper</button>
+  </form>
+
+  <script>
+    // FR-020: every choice is saved as it is made; the server submits at expiry, and this reload shows it.
+    // setTimeout counts elapsed time, so changing the PC clock cannot delay the reload (IT_027).
+    // FR-019: no save button -- each choice, clear or review flag is posted at once, well inside the 5 s budget.
+    const form = document.getElementById("question");
+    const updatePalette = () => {
+      const cell = document.querySelector("[aria-current='page']");
+      if (!cell) return;
+      const isMarked = form.querySelector('input[data-flag]')?.checked;
+      const hasOption = !!form.querySelector('input[name="option"]:checked');
+      let state = "not-answered";
+      let label = "Not answered";
+      if (isMarked) {
+        state = "marked";
+        label = "Marked for review";
+      } else if (hasOption) {
+        state = "answered";
+        label = "Answered";
+      }
+      cell.className = `cell ${state}`;
+      const hidden = cell.querySelector(".visually-hidden");
+      if (hidden) hidden.textContent = `Question {{ n }}, ${label}`;
+    };
+    const save = (fields) => {
+      const body = new FormData();
+      for (const [k, v] of Object.entries(fields)) body.append(k, v);
+      body.append("csrfmiddlewaretoken", form.elements.csrfmiddlewaretoken.value);
+      fetch(form.dataset.answers, { method: "POST", body }).then((r) => {
+        if (r.status === 409) location.reload();
+        if (r.ok) updatePalette();
+      });
+    };
+    const chosen = (q) => form.querySelector(`input[data-question="${q}"]:checked`)?.value ?? "";
+    form.addEventListener("change", (e) => {
+      const { question, flag } = e.target.dataset;
+      if (question) save({ question, option: e.target.value });
+      if (flag) save({ question: flag, option: chosen(flag), marked_for_review: e.target.checked ? "1" : "0" });
+    });
+    form.addEventListener("click", (e) => {
+      const q = e.target.dataset.clear;
+      if (!q) return;
+      form.querySelectorAll(`input[data-question="${q}"]`).forEach((r) => { r.checked = false; });
+      save({ question: q, option: "" });
+    });
+    setTimeout(() => location.reload(), (Number(form.dataset.expiresIn) + 1) * 1000);
+  </script>
+</body>
+</html>
