@@ -130,28 +130,31 @@ def attempt_paper(request, pk):
             {"attempt": attempt, "timed_out": timed_out},
         )
 
-    saved = {a.question_id: a for a in attempt.answers.all()}
-    questions = [
-        {
-            **question,
-            "saved": getattr(saved.get(question["id"]), "option_id", None),
-            "marked": getattr(saved.get(question["id"]), "marked_for_review", False),
-        }
-        for question in paper(attempt)
-    ]
-    expires_in = math.ceil(
-        (expires_at(attempt) - timezone.now()).total_seconds()
-    )
+    return redirect("attempt-question", attempt.pk, 1)
 
-    return render(
-        request,
-        "attempts/paper.html",
-        {
-            "attempt": attempt,
-            "questions": questions,
-            "expires_in": expires_in,
-        },
-    )
+
+@roles(Role.STUDENT)
+@require_GET
+def attempt_question(request, pk, n):
+    """FR-018: question `n` (1-based) of the Student's attempt, with the palette for the whole paper."""
+    attempt = close_if_expired(get_object_or_404(Attempt, pk=pk, student=request.user))
+    if attempt.submitted_at:
+        return redirect("attempt-paper", attempt.pk)  # shows the submitted page
+
+    questions = paper(attempt)
+    if not 1 <= n <= len(questions):
+        raise Http404
+    question = questions[n - 1]
+
+    services.visit(attempt, question["id"])
+    states = services.palette(attempt, [q["id"] for q in questions])
+    saved = attempt.answers.get(question_id=question["id"])
+    expires_in = math.ceil((expires_at(attempt) - timezone.now()).total_seconds())
+    return render(request, "attempts/question.html", {
+        "attempt": attempt, "question": question, "n": n, "total": len(questions),
+        "cells": list(enumerate(states, start=1)), "saved": saved.option_id,
+        "marked": saved.marked_for_review, "expires_in": expires_in,
+    })
 
 
 @roles(Role.STUDENT)
