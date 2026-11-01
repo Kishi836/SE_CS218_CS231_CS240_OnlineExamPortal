@@ -50,7 +50,7 @@ class AutoSubmitTests(TestCase):
 
     def test_UT_049_the_paper_submits_itself_at_zero(self):
         self.elapse(3 * 60 - 30)
-        self.assertContains(self.client.get(f"/attempts/{self.attempt.pk}/"), 'data-expires-in="30"')  # the page reloads itself then
+        self.assertContains(self.client.get(f"/attempts/{self.attempt.pk}/", follow=True), 'data-expires-in="30"')  # the page reloads itself then
         self.answer(self.options[0][1])
         self.elapse(31)
         self.assertContains(self.client.get(f"/attempts/{self.attempt.pk}/"), TIME_IS_UP)

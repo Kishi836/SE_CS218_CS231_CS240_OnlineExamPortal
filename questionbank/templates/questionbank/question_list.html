@@ -1,17 +1,35 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Question bank</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Question bank</title></head>
 <body>
   {% include "_nav.html" %}
+  <main id="main">
   <h1>Question bank</h1>
-  {% if messages %}{% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}{% endif %}
+  {% if messages %}{% for message in messages %}<p role="status" class="msg-{{ message.tags }}">{{ message }}</p>{% endfor %}{% endif %}
   <p><a href="{% url 'question-create' %}">Create question</a></p>
-  <ul>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">Course</th><th scope="col">Question</th><th scope="col">Topic</th><th scope="col">Difficulty</th><th scope="col">Marks</th><th scope="col">Version</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+    <tbody>
     {% for question in questions %}
-      <li>{{ question.course.code }} — {{ question.topic }} — {{ question.get_difficulty_display }} — +{{ question.positive_marks }} / -{{ question.negative_marks }}: {{ question.stem }}</li>
+      <tr>
+        <td>{{ question.course.code }}</td>
+        <td>{{ question.stem }}</td>
+        <td>{{ question.topic }}</td>
+        <td>{{ question.get_difficulty_display }}</td>
+        <td>+{{ question.positive_marks }} / −{{ question.negative_marks }}</td>
+        <td>v{{ question.version }}</td>
+        <td class="actions">
+          <a href="{% url 'question-edit' question.pk %}">Edit<span class="visually-hidden"> question {{ question.pk }}</span></a>
+          <form method="post" action="{% url 'question-delete' question.pk %}">{% csrf_token %}<button type="submit" class="link-danger">Delete<span class="visually-hidden"> question {{ question.pk }}</span></button></form>
+        </td>
+      </tr>
     {% empty %}
-      <li>No questions have been created yet.</li>
+      <tr><td colspan="7">No questions have been created yet.</td></tr>
     {% endfor %}
-  </ul>
+    </tbody>
+  </table>
+  </div>
+  </main>
 </body>
 </html>

@@ -1,8 +1,11 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Student registration</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Student registration</title></head>
 <body>
   {% include "_nav.html" %}
+  <main id="main">
   <h1>Create your Student account</h1>
   <form method="post">
     {% csrf_token %}
@@ -22,6 +25,8 @@
       {{ form.roll_number }}
       {{ form.roll_number.errors }}
     </p>
+    <p><label>{{ form.consent }} {{ form.consent.label }}</label> {{ form.consent.errors }}</p>
+    <p>You can ask the Administrator to erase your personal data at any time.</p>
     <p>
       <label for="{{ form.password1.id_for_label }}">Password</label>
       {{ form.password1 }}
@@ -35,5 +40,6 @@
     <button type="submit">Register</button>
   </form>
   <p><a href="{% url 'login' %}">Sign in</a></p>
+  </main>
 </body>
 </html>

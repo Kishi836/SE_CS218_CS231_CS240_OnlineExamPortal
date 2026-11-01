@@ -2,9 +2,11 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_POST
 
+from attempts.services import dashboard_groups
 from repository.forms import CourseForm, EnrollmentForm
 from repository.models import Course, Role, User
 
@@ -39,10 +41,13 @@ def home(request):
     return redirect(f"{request.user.role.lower()}-dashboard")
 
 
-# Placeholder dashboards so each role has a landing page; the real ones are FR-014 and the consoles.
 @roles(Role.STUDENT)
 def student_dashboard(request):
-    return render(request, "identity/dashboard.html")
+    """FR-014: the tiles plus the Student's exams grouped as Upcoming / Live / Completed."""
+    return render(request, "identity/dashboard.html", {"groups": dashboard_groups(request.user)})
+
+
+# Placeholder dashboards so each role has a landing page; the real ones are the consoles.
 
 
 @roles(Role.FACULTY)
@@ -140,6 +145,20 @@ def course_roster(request, course_id):
         "identity/course_roster.html",
         {"course": course, "students": students},
     )
+
+
+@roles(Role.ADMIN)
+@require_POST
+def student_erase(request, student_id):
+    """NFR-008: an Administrator erases a Student's personal data on request (DPDP Act, within 30 days)."""
+    student = get_object_or_404(User, pk=student_id, role=Role.STUDENT)  # Faculty / Admin ids -> 404
+    from .erasure import erase_student
+    erase_student(student)
+    messages.success(request, "Personal data erased.")
+    next_url = request.POST.get("next")
+    if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+        return redirect(next_url)
+    return redirect("course-list")
 
 
 @roles(Role.FACULTY, Role.ADMIN)

@@ -16,6 +16,8 @@ urlpatterns = [
     path("admin/courses/<int:course_id>/archive/",
          views.course_archive, name="course-archive"),
 
+    path("admin/students/<int:student_id>/erase/", views.student_erase, name="student-erase"),  # NFR-008
+
     path("faculty/courses/", views.faculty_courses, name="faculty-courses"),
     path("courses/<int:course_id>/roster/",
          views.course_roster, name="course-roster"),
