@@ -6,7 +6,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_POST
 
+from repository import audit
 from attempts.services import dashboard_groups
+
 from repository.forms import CourseForm, EnrollmentForm
 from repository.models import Course, Role, User
 
@@ -22,14 +24,16 @@ def register(request):
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
-                form.save()
+                user = form.save()
+                audit.record(user, "create", user)
         except IntegrityError as error:
-            # Validation handles normal duplicates. This is the race-condition fallback.
             message = str(error).lower()
             if "roll_number" in message:
-                form.add_error("roll_number", "This roll number is already registered")
+                form.add_error(
+                    "roll_number", "This roll number is already registered")
             else:
-                form.add_error("email", "An account with this email already exists")
+                form.add_error(
+                    "email", "An account with this email already exists")
         else:
             messages.success(request, "Registration successful")
             return redirect("login")
@@ -74,7 +78,10 @@ def course_create(request):
     if request.method == "POST":
         form = CourseForm(request.POST)
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                course = form.save()
+                audit.record(request.user, "create", course)
+
             messages.success(request, "Course created successfully.")
             return redirect("course-list")
     else:
@@ -92,9 +99,28 @@ def course_edit(request, course_id):
     course = get_object_or_404(Course, pk=course_id)
 
     if request.method == "POST":
+        old_values = {
+            "code": course.code,
+            "title": course.title,
+        }
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                updated = form.save()
+                changes = {}
+                for field, old_value in old_values.items():
+                    new_value = getattr(updated, field)
+                    if old_value != new_value:
+                        changes[field] = [old_value, new_value]
+
+                if changes:
+                    audit.record(
+                        request.user,
+                        "update",
+                        updated,
+                        changes,
+                    )
+
             messages.success(request, "Course updated successfully.")
             return redirect("course-list")
     else:
@@ -111,8 +137,18 @@ def course_edit(request, course_id):
 @require_POST
 def course_archive(request, course_id):
     course = get_object_or_404(Course, pk=course_id)
-    course.archived = True
-    course.save(update_fields=["archived"])
+
+    if not course.archived:
+        with transaction.atomic():
+            course.archived = True
+            course.save(update_fields=["archived"])
+            audit.record(
+                request.user,
+                "archive",
+                course,
+                {"archived": [False, True]},
+            )
+
     messages.success(request, "Course archived successfully.")
     return redirect("course-list")
 
@@ -151,7 +187,8 @@ def course_roster(request, course_id):
 @require_POST
 def student_erase(request, student_id):
     """NFR-008: an Administrator erases a Student's personal data on request (DPDP Act, within 30 days)."""
-    student = get_object_or_404(User, pk=student_id, role=Role.STUDENT)  # Faculty / Admin ids -> 404
+    student = get_object_or_404(
+        User, pk=student_id, role=Role.STUDENT)  # Faculty / Admin ids -> 404
     from .erasure import erase_student
     erase_student(student)
     messages.success(request, "Personal data erased.")
@@ -183,6 +220,12 @@ def course_enroll(request, course_id):
                 form.add_error("student", "This student is already enrolled")
             else:
                 course.students.add(student)
+                audit.record(
+                    request.user,
+                    "enroll",
+                    course,
+                    {"student_id": student.pk},
+                )
                 messages.success(request, "Student enrolled successfully.")
                 return redirect("course-roster", course_id=course.pk)
     else:
@@ -209,6 +252,12 @@ def course_unenroll(request, course_id, student_id):
     student = get_object_or_404(User, pk=student_id, role=Role.STUDENT)
     if course.students.filter(pk=student.pk).exists():
         course.students.remove(student)
+        audit.record(
+            request.user,
+            "unenroll",
+            course,
+            {"student_id": student.pk},
+        )
         messages.success(request, "Student unenrolled successfully.")
 
     return redirect("course-roster", course_id=course.pk)

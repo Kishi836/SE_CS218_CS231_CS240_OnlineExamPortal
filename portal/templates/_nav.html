@@ -13,6 +13,7 @@
       <a href="{% url 'admin-dashboard' %}" {% if p == '/admin/' %}class="active"{% endif %}>Dashboard</a>
       <a href="{% url 'course-list' %}" {% if '/courses' in p %}class="active"{% endif %}>Courses</a>
       <a href="{% url 'course-create' %}">New course</a>
+      <a href="{% url 'audit-log' %}" {% if '/admin/audit/' in p %}class="active"{% endif %}>Audit log</a>
     {% elif user.role == "FACULTY" %}
       <a href="{% url 'faculty-dashboard' %}" {% if p == '/faculty/' %}class="active"{% endif %}>Dashboard</a>
       <a href="{% url 'faculty-courses' %}" {% if '/courses' in p %}class="active"{% endif %}>My courses</a>

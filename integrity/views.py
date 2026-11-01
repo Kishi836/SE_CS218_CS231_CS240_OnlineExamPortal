@@ -6,7 +6,7 @@ from django.views.decorators.http import require_GET, require_POST
 from attempts.services import AttemptClosed  # noqa: F401
 from examsetup.views import _faculty_exam_or_403  # noqa: F401
 from identity.access import roles
-from repository.models import Attempt, Role  # noqa: F401
+from repository.models import Attempt, AuditEntry, Role
 
 from . import services  # noqa: F401
 
@@ -29,3 +29,21 @@ def exam_integrity(request, exam_id):
     """FR-028: the course's Faculty sees every attempt's focus-loss count and server timestamps. A human decides."""
     exam = _faculty_exam_or_403(request, exam_id)
     return render(request, "integrity/exam_integrity.html", {"exam": exam, "attempt_events": services.events_by_attempt(exam)})
+
+
+@roles(Role.ADMIN)
+@require_GET
+def audit_log(request):
+    """FR-030: Read-only audit log, newest first, with optional entity filters."""
+    entries = AuditEntry.objects.select_related("actor")
+
+    entity = request.GET.get("entity", "").strip()
+    entity_id = request.GET.get("entity_id", "").strip()
+
+    if entity:
+        entries = entries.filter(entity=entity)
+
+    if entity_id.isdigit():
+        entries = entries.filter(entity_id=int(entity_id))
+
+    return render(request, "integrity/audit_log.html", {"entries": entries[:500]})

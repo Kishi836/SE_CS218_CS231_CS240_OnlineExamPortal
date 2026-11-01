@@ -1,12 +1,13 @@
-
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from identity.access import roles
+from repository import audit
 from repository.models import Exam, ExamQuestion, Role
 
 from .forms import ExamForm, ExamQuestionForm, ExamScheduleForm
@@ -45,7 +46,11 @@ def exam_create(request):
             else:
                 exam.status = Exam.Status.DRAFT
                 exam.published_at = None
-                exam.save()
+
+                with transaction.atomic():
+                    exam.save()
+                    audit.record(request.user, "create", exam)
+
                 messages.success(request, "Exam created as Draft.")
                 return redirect("exam-detail", exam_id=exam.pk)
     else:
@@ -61,19 +66,44 @@ def exam_create(request):
 @roles(Role.FACULTY)
 def exam_edit(request, exam_id):
     exam = _faculty_exam_or_403(request, exam_id)
+
     if exam.status != Exam.Status.DRAFT:
         raise PermissionDenied("Only Draft exams can be edited.")
 
     if request.method == "POST":
+        # FR-030: capture every editable field BEFORE binding the form (attname, so the course is its id).
+        fields = [Exam._meta.get_field(f).attname for f in ExamForm.Meta.fields]
+        before = {f: getattr(exam, f) for f in fields}
+
         form = ExamForm(
-            request.POST, instance=exam, user=request.user
+            request.POST,
+            instance=exam,
+            user=request.user,
         )
+
         if form.is_valid():
             updated = form.save(commit=False)
+
             if updated.course.archived:
                 form.add_error("course", "This course is archived")
             else:
-                updated.save()
+                with transaction.atomic():
+                    updated.save()
+
+                    changes = {
+                        f: [before[f], getattr(updated, f)]
+                        for f in fields
+                        if before[f] != getattr(updated, f)
+                    }
+
+                    if changes:
+                        audit.record(
+                            request.user,
+                            "update",
+                            updated,
+                            changes,
+                        )
+
                 messages.success(request, "Draft exam updated.")
                 return redirect("exam-detail", exam_id=exam.pk)
     else:
@@ -158,9 +188,18 @@ def exam_publish(request, exam_id):
         )
         return redirect("exam-detail", exam_id=exam.pk)
 
+    old_status = exam.status
     exam.status = Exam.Status.PUBLISHED
     exam.published_at = timezone.now()
-    exam.save(update_fields=["status", "published_at"])
+
+    with transaction.atomic():
+        exam.save(update_fields=["status", "published_at"])
+        audit.record(
+            request.user,
+            "publish",
+            exam,
+            {"status": [old_status, exam.status]},
+        )
 
     messages.success(request, "Exam published.")
     return redirect("exam-detail", exam_id=exam.pk)
@@ -176,10 +215,17 @@ def exam_schedule(request, exam_id):
     if request.method == "POST":
         form = ExamScheduleForm(request.POST, instance=exam)
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                updated = form.save()
+                audit.record(request.user, "schedule", updated)
+
             messages.success(request, "Examination scheduled")
             return redirect("exam-detail", exam_id=exam.pk)
     else:
         form = ExamScheduleForm(instance=exam)
 
-    return render(request, "examsetup/exam_schedule.html", {"exam": exam, "form": form})
+    return render(
+        request,
+        "examsetup/exam_schedule.html",
+        {"exam": exam, "form": form},
+    )

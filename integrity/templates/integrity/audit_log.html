@@ -1,0 +1,72 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Audit log</title>
+  </head>
+  <body>
+    {% include "_nav.html" %}
+
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <main id="main">
+      <h1>Audit log</h1>
+
+      <form method="get">
+        <label>
+          Entity
+          <input
+            name="entity"
+            value="{{ request.GET.entity }}"
+            placeholder="Exam"
+          />
+        </label>
+
+        <label>
+          ID
+          <input
+            name="entity_id"
+            value="{{ request.GET.entity_id }}"
+            inputmode="numeric"
+          />
+        </label>
+
+        <button type="submit">Filter</button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">When (server)</th>
+            <th scope="col">Actor</th>
+            <th scope="col">Action</th>
+            <th scope="col">Entity</th>
+            <th scope="col">Changes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td>{{ entry.at|date:"Y-m-d H:i:s" }}</td>
+            <td>
+              {% if entry.actor %}
+                {{ entry.actor.email }}
+              {% else %}
+                System
+              {% endif %}
+            </td>
+            <td>{{ entry.action }}</td>
+            <td>{{ entry.entity }} #{{ entry.entity_id }}</td>
+            <td>{{ entry.changes }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">No audit entries found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </main>
+  </body>
+</html>

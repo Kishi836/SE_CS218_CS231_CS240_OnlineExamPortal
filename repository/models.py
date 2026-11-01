@@ -180,8 +180,25 @@ class SignInFailure(models.Model):
     at = models.DateTimeField(auto_now_add=True)
 
 
+class AppendOnly(Exception):
+    """FR-030: audit entries are never changed or removed."""
+
+
+class AuditQuerySet(models.QuerySet):
+    """Prevent bulk modifications and deletions of audit entries."""
+
+    def update(self, **kwargs):
+        raise AppendOnly("The audit log is append-only")
+
+    def delete(self):
+        raise AppendOnly("The audit log is append-only")
+
+
 class AuditEntry(models.Model):
-    """FR-030: who did what to which entity, when, and the values before and after."""
+    """FR-030: who did what to which entity, when, and the values before and after.
+
+    Append-only three times over: save()/delete() below, AuditQuerySet, and SQLite triggers (migration 0006).
+    """
 
     actor = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)  # null = the system itself
     action = models.CharField(max_length=40)
@@ -190,5 +207,17 @@ class AuditEntry(models.Model):
     changes = models.JSONField(default=dict, blank=True)
     at = models.DateTimeField(auto_now_add=True)
 
+    objects = AuditQuerySet.as_manager()
+
     class Meta:
         ordering = ["-at", "-id"]
+
+    def save(self, *args, **kwargs):
+        """Allow creation, but refuse modifications to existing entries."""
+        if not self._state.adding:
+            raise AppendOnly("The audit log is append-only")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Audit entries cannot be deleted."""
+        raise AppendOnly("The audit log is append-only")

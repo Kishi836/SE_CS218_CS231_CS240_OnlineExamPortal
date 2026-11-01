@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from attempts.services import result_visible
 from examsetup.views import _faculty_exam_or_403
 from identity.access import roles
+from repository import audit
 from repository.models import Attempt, Role
 
 from .services import ResultsNotReady, scorecard, set_results_published
@@ -19,12 +20,19 @@ def results_publish(request, exam_id):
     """FR-026: the Faculty of the exam's course publishes or unpublishes its results."""
     exam = _faculty_exam_or_403(request, exam_id)
     publish = request.POST.get("publish") == "1"
+    was_published = exam.results_published
 
     try:
         set_results_published(exam, publish)
     except ResultsNotReady as refusal:
         messages.error(request, str(refusal))
     else:
+        audit.record(
+            request.user,
+            "publish_results" if publish else "unpublish_results",
+            exam,
+            {"results_published": [was_published, publish]},
+        )
         messages.success(
             request,
             "Results published." if publish else "Results unpublished.",

@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from identity.access import roles
+from repository import audit
 from repository.models import Attempt, Exam, Option, Question, Role
 
 from . import services
@@ -39,7 +40,9 @@ def start(exam, student):
         if now >= exam.window_end:
             raise NotEligible("This examination has closed")
 
-    attempt, _ = Attempt.objects.get_or_create(exam=exam, student=student)
+    attempt, created = Attempt.objects.get_or_create(exam=exam, student=student)
+    if created:
+        audit.record(student, "create", attempt)
 
     if close_if_expired(attempt).submitted_at:
         raise NotEligible("You have already submitted this examination")
@@ -201,5 +204,5 @@ def submit_attempt(request, pk):
     attempt = close_if_expired(
         get_object_or_404(Attempt, pk=pk, student=request.user)
     )
-    services.submit(attempt)
+    services.submit(attempt, actor=request.user)
     return redirect("attempt-paper", attempt.pk)
