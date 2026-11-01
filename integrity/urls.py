@@ -1,23 +1,10 @@
+"""Integrity routes (SAD 3.1): focus-loss events and the audit viewer (FR-028, FR-030)."""
 from django.urls import path
 
 from . import views
 
 urlpatterns = [
-    # FR-030: Admin audit log
-    path("admin/audit/", views.audit_log, name="audit-log"),
-
-
-    # FR-028: Focus-loss recording
-    path(
-        "api/attempts/<int:pk>/focus-lost",
-        views.focus_lost,
-        name="attempt-focus-lost",
-    ),
-
-    # FR-028: Faculty integrity page
-    path(
-        "faculty/exams/<int:exam_id>/integrity/",
-        views.exam_integrity,
-        name="exam-integrity",
-    ),
+    path("api/attempts/<int:pk>/focus-lost", views.focus_lost, name="attempt-focus-lost"),  # FR-028
+    path("faculty/exams/<int:exam_id>/integrity/", views.exam_integrity, name="exam-integrity"),  # FR-028
+    path("admin/audit/", views.audit_log, name="audit-log"),  # FR-030
 ]

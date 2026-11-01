@@ -79,3 +79,4 @@ class PaletteTests(TestCase):
         self.assertContains(response, '<span class="visually-hidden">Question 2, Answered</span>')
         self.assertContains(response, '<span class="visually-hidden">Question 3, Marked for review</span>')
         self.assertContains(response, '<span class="visually-hidden">Question 4, Not visited</span>')
+

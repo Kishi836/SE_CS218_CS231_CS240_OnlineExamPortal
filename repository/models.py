@@ -31,11 +31,9 @@ class User(AbstractUser):
     last_name = None
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150)
-    roll_number = models.CharField(
-        max_length=20, unique=True, null=True, blank=True)  # Students only
+    roll_number = models.CharField(max_length=20, unique=True, null=True, blank=True)  # Students only
     role = models.CharField(max_length=7, choices=Role.choices)
-    # NFR-008: DPDP consent at registration
-    consent_given_at = models.DateTimeField(null=True, blank=True)
+    consent_given_at = models.DateTimeField(null=True, blank=True)  # NFR-008: DPDP consent at registration
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]
@@ -43,8 +41,7 @@ class User(AbstractUser):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=models.Q(
-                role__in=Role.values), name="user_has_one_valid_role"),
+            models.CheckConstraint(condition=models.Q(role__in=Role.values), name="user_has_one_valid_role"),
         ]
 
     def get_full_name(self):
@@ -55,21 +52,18 @@ class User(AbstractUser):
 
 
 class Course(models.Model):
-    # unique per semester, not globally (UT_014)
-    code = models.CharField(max_length=20)
+    code = models.CharField(max_length=20)  # unique per semester, not globally (UT_014)
     title = models.CharField(max_length=200)
     semester = models.PositiveSmallIntegerField()
     archived = models.BooleanField(default=False)
-    faculty = models.ManyToManyField(
-        User, related_name="taught_courses", limit_choices_to={"role": Role.FACULTY})
+    faculty = models.ManyToManyField(User, related_name="taught_courses", limit_choices_to={"role": Role.FACULTY})
     # A many-to-many row per (course, student) means enrolling twice still leaves one enrollment (FR-005).
     students = models.ManyToManyField(
         User, related_name="enrolled_courses", blank=True, limit_choices_to={"role": Role.STUDENT}
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=["code", "semester"], name="course_code_unique_per_semester")]
+        constraints = [models.UniqueConstraint(fields=["code", "semester"], name="course_code_unique_per_semester")]
 
     def __str__(self):
         return f"{self.code} {self.title}"
@@ -81,16 +75,13 @@ class Question(models.Model):
         MEDIUM = "MEDIUM", "Medium"
         HARD = "HARD", "Hard"
 
-    course = models.ForeignKey(
-        Course, on_delete=models.PROTECT, related_name="questions")
+    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="questions")
     stem = models.TextField()
     topic = models.CharField(max_length=100)
     difficulty = models.CharField(max_length=6, choices=Difficulty.choices)
     positive_marks = models.DecimalField(max_digits=5, decimal_places=2)
-    negative_marks = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0)
-    created_by = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="questions")
+    negative_marks = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="questions")
     # FR-009: editing a question in use makes a new row; the old one is kept, unchanged, and retired from the bank.
     version = models.PositiveIntegerField(default=1)
     previous = models.OneToOneField(
@@ -103,11 +94,9 @@ class Question(models.Model):
 
 
 class Option(models.Model):
-    question = models.ForeignKey(
-        Question, on_delete=models.CASCADE, related_name="options")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
     text = models.TextField()
-    # FR-029: never part of anything sent to a Student
-    is_correct = models.BooleanField(default=False)
+    is_correct = models.BooleanField(default=False)  # FR-029: never part of anything sent to a Student
 
     def __str__(self):
         return self.text[:60]
@@ -118,25 +107,21 @@ class Exam(models.Model):
         DRAFT = "DRAFT", "Draft"
         PUBLISHED = "PUBLISHED", "Published"
 
-    course = models.ForeignKey(
-        Course, on_delete=models.PROTECT, related_name="exams")
+    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams")
     title = models.CharField(max_length=200)
     duration_minutes = models.PositiveIntegerField()
     total_marks = models.DecimalField(max_digits=6, decimal_places=2)
     instructions = models.TextField(blank=True)
-    # the deduction itself is Question.negative_marks
-    negative_marking = models.BooleanField(default=True)
+    negative_marking = models.BooleanField(default=True)  # the deduction itself is Question.negative_marks
     shuffle_questions = models.BooleanField(default=False)
     shuffle_options = models.BooleanField(default=False)
     pass_mark_percent = models.DecimalField(max_digits=5, decimal_places=2)
-    status = models.CharField(
-        max_length=9, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(max_length=9, choices=Status.choices, default=Status.DRAFT)
     published_at = models.DateTimeField(null=True, blank=True)
     window_start = models.DateTimeField(null=True, blank=True)
     window_end = models.DateTimeField(null=True, blank=True)
     results_published = models.BooleanField(default=False)  # FR-025/026
-    questions = models.ManyToManyField(
-        Question, through="ExamQuestion", related_name="exams")
+    questions = models.ManyToManyField(Question, through="ExamQuestion", related_name="exams")
 
     def __str__(self):
         return self.title
@@ -149,53 +134,39 @@ class ExamQuestion(models.Model):
 
     class Meta:
         ordering = ["order"]
-        constraints = [models.UniqueConstraint(
-            fields=["exam", "question"], name="question_once_per_exam")]
+        constraints = [models.UniqueConstraint(fields=["exam", "question"], name="question_once_per_exam")]
 
 
 class Attempt(models.Model):
-    exam = models.ForeignKey(
-        Exam, on_delete=models.PROTECT, related_name="attempts")
-    student = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="attempts")
-    # FR-016: the server's clock, never the client's
-    started_at = models.DateTimeField(auto_now_add=True)
+    exam = models.ForeignKey(Exam, on_delete=models.PROTECT, related_name="attempts")
+    student = models.ForeignKey(User, on_delete=models.PROTECT, related_name="attempts")
+    started_at = models.DateTimeField(auto_now_add=True)  # FR-016: the server's clock, never the client's
     submitted_at = models.DateTimeField(null=True, blank=True)
-    score = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)
-    percentage = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True)  # FR-024
-    # FR-024: null until evaluated
-    passed = models.BooleanField(null=True, blank=True)
+    score = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    percentage = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)  # FR-024
+    passed = models.BooleanField(null=True, blank=True)  # FR-024: null until evaluated
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=["exam", "student"], name="one_attempt_per_student")]
+        constraints = [models.UniqueConstraint(fields=["exam", "student"], name="one_attempt_per_student")]
 
 
 class Answer(models.Model):
-    attempt = models.ForeignKey(
-        Attempt, on_delete=models.CASCADE, related_name="answers")
+    attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name="answers")
     question = models.ForeignKey(Question, on_delete=models.PROTECT)
-    option = models.ForeignKey(
-        Option, on_delete=models.PROTECT, null=True, blank=True)  # null = unanswered
+    option = models.ForeignKey(Option, on_delete=models.PROTECT, null=True, blank=True)  # null = unanswered
     saved_at = models.DateTimeField(auto_now=True)
     # FR-018: a row with no option is a visited, unanswered question; no row at all is Not Visited.
     marked_for_review = models.BooleanField(default=False)
-    # FR-027, set on evaluation
-    marks = models.DecimalField(
-        max_digits=5, decimal_places=2, null=True, blank=True)
+    marks = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # FR-027, set on evaluation
 
     class Meta:
-        constraints = [models.UniqueConstraint(
-            fields=["attempt", "question"], name="one_answer_per_question")]
+        constraints = [models.UniqueConstraint(fields=["attempt", "question"], name="one_answer_per_question")]
 
 
 class FocusEvent(models.Model):
     """FR-028: the exam window lost focus. The time is the server's; the browser sends none."""
 
-    attempt = models.ForeignKey(
-        Attempt, on_delete=models.PROTECT, related_name="focus_events")
+    attempt = models.ForeignKey(Attempt, on_delete=models.PROTECT, related_name="focus_events")
     occurred_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -229,9 +200,7 @@ class AuditEntry(models.Model):
     Append-only three times over: save()/delete() below, AuditQuerySet, and SQLite triggers (migration 0006).
     """
 
-    # null = the system itself
-    actor = models.ForeignKey(
-        User, on_delete=models.PROTECT, null=True, blank=True)
+    actor = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)  # null = the system itself
     action = models.CharField(max_length=40)
     entity = models.CharField(max_length=40)
     entity_id = models.PositiveBigIntegerField()

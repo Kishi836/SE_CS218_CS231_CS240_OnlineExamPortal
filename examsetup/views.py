@@ -71,8 +71,9 @@ def exam_edit(request, exam_id):
         raise PermissionDenied("Only Draft exams can be edited.")
 
     if request.method == "POST":
-        # Capture the original values BEFORE binding the form.
-        old_title = exam.title
+        # FR-030: capture every editable field BEFORE binding the form (attname, so the course is its id).
+        fields = [Exam._meta.get_field(f).attname for f in ExamForm.Meta.fields]
+        before = {f: getattr(exam, f) for f in fields}
 
         form = ExamForm(
             request.POST,
@@ -86,14 +87,14 @@ def exam_edit(request, exam_id):
             if updated.course.archived:
                 form.add_error("course", "This course is archived")
             else:
-                new_title = updated.title
-
                 with transaction.atomic():
                     updated.save()
 
-                    changes = {}
-                    if old_title != new_title:
-                        changes["title"] = [old_title, new_title]
+                    changes = {
+                        f: [before[f], getattr(updated, f)]
+                        for f in fields
+                        if before[f] != getattr(updated, f)
+                    }
 
                     if changes:
                         audit.record(

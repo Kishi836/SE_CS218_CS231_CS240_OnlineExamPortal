@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from evaluation.engine import evaluate
+from repository import audit
 from repository.models import Answer, Attempt, Exam
 
 
@@ -12,15 +13,18 @@ class AttemptClosed(Exception):
     """A change refused because the attempt is already submitted (FR-020); the message is the Test Plan's wording."""
 
 
-def submit(attempt, at=None):
+def submit(attempt, at=None, actor=None):
     """The only way an attempt becomes submitted -- manual submit and FR-020's auto-submit both call this.
 
     FR-022: evaluation runs in the same transaction, so a submitted attempt never lacks a score.
     The conditional update makes a second submit (a double click, or racing the auto-submit) a no-op.
+    FR-030: actor is the Student on a manual submit and None (the system) on auto-submit; evaluation is the system's.
     """
     with transaction.atomic():
         if Attempt.objects.filter(pk=attempt.pk, submitted_at__isnull=True).update(submitted_at=at or timezone.now()):
-            evaluate(attempt)
+            audit.record(actor, "submit", attempt)
+            score = evaluate(attempt)
+            audit.record(None, "evaluate", attempt, {"score": [None, score]})
     attempt.refresh_from_db()
 
 

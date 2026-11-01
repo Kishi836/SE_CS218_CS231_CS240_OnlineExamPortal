@@ -10,8 +10,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from identity.access import roles
-from repository.models import Attempt, Exam, Option, Question, Role
 from repository import audit
+from repository.models import Attempt, Exam, Option, Question, Role
 
 from . import services
 from .services import AttemptClosed, close_if_expired, expires_at, remaining_seconds, result_visible
@@ -40,11 +40,7 @@ def start(exam, student):
         if now >= exam.window_end:
             raise NotEligible("This examination has closed")
 
-    attempt, created = Attempt.objects.get_or_create(
-        exam=exam,
-        student=student,
-    )
-
+    attempt, created = Attempt.objects.get_or_create(exam=exam, student=student)
     if created:
         audit.record(student, "create", attempt)
 
@@ -144,11 +140,9 @@ def attempt_paper(request, pk):
 @require_GET
 def attempt_question(request, pk, n):
     """FR-018: question `n` (1-based) of the Student's attempt, with the palette for the whole paper."""
-    attempt = close_if_expired(get_object_or_404(
-        Attempt, pk=pk, student=request.user))
+    attempt = close_if_expired(get_object_or_404(Attempt, pk=pk, student=request.user))
     if attempt.submitted_at:
-        # shows the submitted page
-        return redirect("attempt-paper", attempt.pk)
+        return redirect("attempt-paper", attempt.pk)  # shows the submitted page
 
     questions = paper(attempt)
     if not 1 <= n <= len(questions):
@@ -158,8 +152,7 @@ def attempt_question(request, pk, n):
     services.visit(attempt, question["id"])
     states = services.palette(attempt, [q["id"] for q in questions])
     saved = attempt.answers.get(question_id=question["id"])
-    expires_in = math.ceil(
-        (expires_at(attempt) - timezone.now()).total_seconds())
+    expires_in = math.ceil((expires_at(attempt) - timezone.now()).total_seconds())
     return render(request, "attempts/question.html", {
         "attempt": attempt, "question": question, "n": n, "total": len(questions),
         "cells": list(enumerate(states, start=1)), "saved": saved.option_id,
@@ -169,8 +162,7 @@ def attempt_question(request, pk, n):
 
 @roles(Role.STUDENT)
 def attempt_remaining(request, pk):
-    attempt = get_object_or_404(Attempt.objects.select_related(
-        "exam"), pk=pk, student=request.user)
+    attempt = get_object_or_404(Attempt.objects.select_related("exam"), pk=pk, student=request.user)
     attempt = close_if_expired(attempt)
     return JsonResponse({"remaining_seconds": remaining_seconds(attempt)})
 
@@ -192,8 +184,7 @@ def save_answer(request, pk):
 
     try:
         services.save_answer(
-            attempt, int(question), int(
-                option) if option else None, None if flag is None else flag == "1"
+            attempt, int(question), int(option) if option else None, None if flag is None else flag == "1"
         )
     except AttemptClosed as refusal:
         return JsonResponse({"detail": str(refusal)}, status=409)
@@ -213,5 +204,5 @@ def submit_attempt(request, pk):
     attempt = close_if_expired(
         get_object_or_404(Attempt, pk=pk, student=request.user)
     )
-    services.submit(attempt)
+    services.submit(attempt, actor=request.user)
     return redirect("attempt-paper", attempt.pk)
