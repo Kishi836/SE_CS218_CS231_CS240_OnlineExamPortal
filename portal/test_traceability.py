@@ -32,9 +32,7 @@ class TraceabilityTests(SimpleTestCase):
         self.assertEqual(counts, {"UT": 68, "IT": 38, "ST": 13})
 
     def test_NFR_007_every_case_is_automated_or_marked_manual_with_a_reason(self):
-        # FR-030's cases arrive with its pull request (#96); delete this exemption when it merges.
-        fr_030_pending = {"UT_068", "IT_036", "IT_037", "ST_013"}
-        missing = sorted(set(TEST_PLAN) - automated_ids() - set(MANUAL) - fr_030_pending)
+        missing = sorted(set(TEST_PLAN) - automated_ids() - set(MANUAL))
         self.assertEqual(missing, [], "Test Plan cases with no automated test and no manual reason")
 
     def test_NFR_007_no_test_names_an_id_the_test_plan_does_not_have(self):

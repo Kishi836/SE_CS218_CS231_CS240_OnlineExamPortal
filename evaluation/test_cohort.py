@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from portal.testkit import World, make_user
-from repository.models import Attempt, Role
+from repository.models import Attempt, AuditEntry, Role
 
 
 class CohortScoringTests(TestCase):
@@ -31,3 +31,5 @@ class CohortScoringTests(TestCase):
         self.assertEqual(results[students[3].pk], (Decimal("12"), Decimal("24"), False))
         self.assertEqual(results[students[2].pk][2], True)  # 20 / 50 = 40%: the pass mark is inclusive
         self.assertEqual(results[students[4].pk], (Decimal("-12.5"), Decimal("-25"), False))  # all wrong goes negative
+        # FR-030: each evaluation is the system's, so it is logged with no actor.
+        self.assertEqual(AuditEntry.objects.filter(entity="Attempt", action="evaluate", actor=None).count(), 5)
