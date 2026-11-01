@@ -75,7 +75,9 @@ class PublishTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertNotContains(response, "32", status_code=403)
+        # Not "32": the 403 page carries a random CSRF token, which sometimes contains those digits.
+        self.assertNotContains(response, '"score"', status_code=403)
+        self.assertNotContains(response, "32.00", status_code=403)
 
     def test_IT_033_another_students_result_is_403(self):
         other = self.world.submitted(self.world.stu_b, right=5)
