@@ -77,6 +77,10 @@ LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 STUDENT_EMAIL_DOMAIN = "pesu.pes.edu"
 
+# NFR-012: 5 failed sign-ins within 15 minutes lock the account for 15 minutes.
+SIGNIN_LOCK_THRESHOLD = 5
+SIGNIN_LOCK_MINUTES = 15
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True

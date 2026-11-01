@@ -14,7 +14,7 @@ from repository.models import Attempt, Exam, Option, Question, Role
 from repository import audit
 
 from . import services
-from .services import AttemptClosed, close_if_expired, expires_at, remaining_seconds
+from .services import AttemptClosed, close_if_expired, expires_at, remaining_seconds, result_visible
 
 
 class NotEligible(Exception):
@@ -134,7 +134,7 @@ def attempt_paper(request, pk):
         return render(
             request,
             "attempts/submitted.html",
-            {"attempt": attempt, "timed_out": timed_out},
+            {"attempt": attempt, "timed_out": timed_out, "visible": result_visible(attempt)},
         )
 
     return redirect("attempt-question", attempt.pk, 1)

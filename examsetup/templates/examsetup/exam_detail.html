@@ -10,9 +10,10 @@
     {% include "_nav.html" %}
   <main id="main">
     <h1>{{ exam.title }}</h1>
-    {% if messages %}
-      {% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
-    {% endif %}
+
+    {% if messages %} {% for message in messages %}
+    <p role="status">{{ message }}</p>
+    {% endfor %} {% endif %}
 
     <p>
       <strong>Course:</strong> {{ exam.course.code }} — {{ exam.course.title }}
@@ -22,24 +23,35 @@
     <p><strong>Total marks:</strong> {{ exam.total_marks }}</p>
     <p><strong>Pass mark:</strong> {{ exam.pass_mark_percent }}%</p>
     <p><strong>Instructions:</strong> {{ exam.instructions|default:"None" }}</p>
+
     <p>
       <strong>Negative marking:</strong>
       {{ exam.negative_marking|yesno:"Enabled,Disabled" }}
     </p>
+
     <p>
       <strong>Shuffle questions:</strong>
       {{ exam.shuffle_questions|yesno:"Yes,No" }}
     </p>
+
     <p>
       <strong>Shuffle options:</strong>
       {{ exam.shuffle_options|yesno:"Yes,No" }}
     </p>
+
     {% if exam.window_start and exam.window_end %}
-    <p><strong>Window start:</strong> {{ exam.window_start|localtime|date:"Y-m-d H:i T" }}</p>
-    <p><strong>Window end:</strong> {{ exam.window_end|localtime|date:"Y-m-d H:i T" }}</p>
+    <p>
+      <strong>Window start:</strong>
+      {{ exam.window_start|localtime|date:"Y-m-d H:i T" }}
+    </p>
+    <p>
+      <strong>Window end:</strong>
+      {{ exam.window_end|localtime|date:"Y-m-d H:i T" }}
+    </p>
     {% endif %}
 
     <h2>Questions</h2>
+
     {% if exam_questions %}
     <ol>
       {% for item in exam_questions %}
@@ -58,9 +70,25 @@
       {% csrf_token %}
       <button type="submit">Publish Exam</button>
     </form>
+
     {% elif exam.status == "PUBLISHED" %}
     <p><a href="{% url 'exam-schedule' exam.id %}">Schedule Examination</a></p>
     <p><a href="{% url 'exam-integrity' exam.id %}">Integrity log</a></p>
+
+    <p>
+      <strong>Results:</strong>
+      {% if exam.results_published %}Published{% else %}Not published{% endif %}
+    </p>
+
+    <form method="post" action="{% url 'results-publish' exam.id %}">
+      {% csrf_token %} {% if exam.results_published %}
+      <input type="hidden" name="publish" value="0" />
+      <button type="submit">Unpublish results</button>
+      {% else %}
+      <input type="hidden" name="publish" value="1" />
+      <button type="submit">Publish results</button>
+      {% endif %}
+    </form>
     {% endif %}
 
     <p><a href="{% url 'exam-list' %}">Back to exams</a></p>
