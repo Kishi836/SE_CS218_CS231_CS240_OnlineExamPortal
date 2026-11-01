@@ -7,6 +7,7 @@
   </head>
   <body>
     {% include "_nav.html" %}
+  <main id="main">
     <h1>Add Questions to {{ exam.title }}</h1>
     <p>Select questions in the order you want them to appear.</p>
 
@@ -16,5 +17,6 @@
     </form>
 
     <p><a href="{% url 'exam-detail' exam.id %}">Back to exam</a></p>
-  </body>
+    </main>
+</body>
 </html>

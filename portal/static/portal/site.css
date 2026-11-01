@@ -3,7 +3,7 @@
   --bg: #fbfbfa;
   --surface: #ffffff;
   --ink: #2f3437;
-  --muted: #787774;
+  --muted: #6b6a66;
   --line: #eaeaea;
   --btn: #111111;
   --btn-hover: #333333;
@@ -113,6 +113,8 @@ button:active, .btn:active { transform: scale(0.98); }
 .btn-ghost, .who button { background: transparent; color: var(--ink); border-color: var(--line); padding: 5px 12px; font-weight: 500; }
 .btn-ghost:hover, .who button:hover { background: #f1f0ed; }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus { left: 16px; top: 16px; z-index: 10; padding: 8px 12px; background: var(--surface); }
 
 /* Forms */
 form { margin: 16px 0; }
@@ -128,7 +130,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type=
   font: 15px var(--sans);
 }
 textarea { min-height: 96px; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--ink); }
+input:focus, select:focus, textarea:focus { border-color: var(--ink); }
 .helptext { color: var(--muted); font-size: 12px; }
 .errorlist { list-style: none; margin: 0 0 12px; padding: 10px 14px; border-radius: 6px; background: var(--red-bg); color: var(--red); }
 fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 0 0 18px; background: var(--surface); }

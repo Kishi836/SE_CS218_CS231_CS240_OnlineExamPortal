@@ -3,6 +3,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ attempt.exam.title }} &middot; Question {{ n }}</title></head>
 <body data-focus-url="{% url 'attempt-focus-lost' attempt.pk %}">
   {% include "_nav.html" %}
+  <main id="main">
   <h1>{{ attempt.exam.title }}</h1>
   {% url 'attempt-remaining' attempt.pk as remaining_url %}
   {% include "attempts/_timer.html" with remaining=expires_in remaining_url=remaining_url %}
@@ -33,6 +34,7 @@
     {% csrf_token %}
     <button type="submit">Submit paper</button>
   </form>
+  </main>
 
   <script>
     // FR-020: every choice is saved as it is made; the server submits at expiry, and this reload shows it.

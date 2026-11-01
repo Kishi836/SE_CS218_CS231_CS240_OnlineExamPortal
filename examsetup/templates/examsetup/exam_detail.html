@@ -8,6 +8,7 @@
   </head>
   <body>
     {% include "_nav.html" %}
+  <main id="main">
     <h1>{{ exam.title }}</h1>
     {% if messages %}
       {% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
@@ -63,5 +64,6 @@
     {% endif %}
 
     <p><a href="{% url 'exam-list' %}">Back to exams</a></p>
-  </body>
+    </main>
+</body>
 </html>

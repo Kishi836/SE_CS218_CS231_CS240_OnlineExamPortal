@@ -7,6 +7,7 @@
   </head>
   <body>
     {% include "_nav.html" %}
+  <main id="main">
     <h1>My Courses</h1>
 
     {% if courses %}
@@ -27,5 +28,6 @@
     {% else %}
     <p>You are not assigned to any courses.</p>
     {% endif %}
-  </body>
+    </main>
+</body>
 </html>

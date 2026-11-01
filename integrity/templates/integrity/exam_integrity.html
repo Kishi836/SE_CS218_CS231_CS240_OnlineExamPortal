@@ -3,6 +3,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ exam.title }} &middot; Integrity events</title></head>
 <body>
   {% include "_nav.html" %}
+  <main id="main">
   <h1>{{ exam.title }} &middot; Integrity events</h1>
   <p class="muted">Each row is the examination window losing focus, timed by the server. These are evidence for review, not a verdict.</p>
   <table>
@@ -12,5 +13,6 @@
     </tbody>
   </table>
   <p><a href="{% url 'exam-detail' exam.id %}">Back to the examination</a></p>
+  </main>
 </body>
 </html>

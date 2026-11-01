@@ -7,6 +7,7 @@
   </head>
   <body>
     {% include "_nav.html" %}
+  <main id="main">
     <h1>{{ course.code }} — {{ course.title }}</h1>
     <p>Semester: {{ course.semester }}</p>
     <p>Status: {% if course.archived %}Archived{% else %}Active{% endif %}</p>
@@ -57,5 +58,6 @@
     {% endif %}
 
     <p><a href="{% url 'faculty-courses' %}">Back to my courses</a></p>
-  </body>
+    </main>
+</body>
 </html>
