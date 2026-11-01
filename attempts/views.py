@@ -1,4 +1,4 @@
-"""Student exam visibility and attempt session management."""
+﻿"""Attempt Session Manager (SAD 3.1): starting an attempt and delivering its paper."""
 
 import math
 
@@ -33,8 +33,8 @@ def start(exam, student):
     ):
         raise PermissionDenied
 
-    # FR-021: the window gates only a new attempt. One already started resumes until its own expiry,
-    # even if the window has closed since.
+    # The window gates only a new attempt. An existing attempt can be resumed
+    # until its own expiry, even if the exam window has closed.
     if not Attempt.objects.filter(exam=exam, student=student).exists():
         now = timezone.now()
 
@@ -53,8 +53,9 @@ def start(exam, student):
 
 
 def paper(attempt):
-    """Return exam questions and option text without exposing correct answers."""
+    """Return ordered questions and option text without exposing correct answers."""
     questions = attempt.exam.questions.order_by("examquestion__order")
+
     return [
         {
             "id": question.id,
@@ -129,7 +130,7 @@ def start_attempt(request):
 
 @roles(Role.STUDENT)
 def attempt_paper(request, pk):
-    """Deliver the student's attempt paper, or show its submitted state."""
+    """Deliver the attempt paper or the submitted-attempt page."""
     attempt = close_if_expired(
         get_object_or_404(Attempt, pk=pk, student=request.user)
     )
@@ -152,6 +153,7 @@ def attempt_paper(request, pk):
         {**question, "saved": saved.get(question["id"])}
         for question in paper(attempt)
     ]
+
     expires_in = math.ceil(
         (expires_at(attempt) - timezone.now()).total_seconds()
     )
@@ -169,6 +171,7 @@ def attempt_paper(request, pk):
 
 @roles(Role.STUDENT)
 def attempt_remaining(request, pk):
+    """Return the remaining time for the student's attempt."""
     attempt = get_object_or_404(
         Attempt.objects.select_related("exam"),
         pk=pk,
@@ -190,6 +193,7 @@ def save_answer(request, pk):
         pk=pk,
         student=request.user,
     )
+
     question = request.POST.get("question", "")
     option = request.POST.get("option", "")
 
@@ -218,7 +222,7 @@ def save_answer(request, pk):
 @roles(Role.STUDENT)
 @require_POST
 def submit_attempt(request, pk):
-    """Submit an attempt, or leave an already-expired attempt closed."""
+    """Submit the attempt; expiry may already have submitted it."""
     attempt = close_if_expired(
         get_object_or_404(
             Attempt,
@@ -226,6 +230,7 @@ def submit_attempt(request, pk):
             student=request.user,
         )
     )
+
     services.submit(attempt)
 
     return redirect("attempt-paper", attempt.pk)
