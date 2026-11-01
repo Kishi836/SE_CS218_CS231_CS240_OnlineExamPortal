@@ -58,6 +58,7 @@
     </form>
     {% elif exam.status == "PUBLISHED" %}
     <p><a href="{% url 'exam-schedule' exam.id %}">Schedule Examination</a></p>
+    <p><a href="{% url 'exam-integrity' exam.id %}">Integrity log</a></p>
     {% endif %}
 
     <p><a href="{% url 'exam-list' %}">Back to exams</a></p>

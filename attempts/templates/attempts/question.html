@@ -1,7 +1,7 @@
 {% load static %}<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ attempt.exam.title }} &middot; Question {{ n }}</title></head>
-<body>
+<body data-focus-url="{% url 'attempt-focus-lost' attempt.pk %}">
   {% include "_nav.html" %}
   <h1>{{ attempt.exam.title }}</h1>
   {% url 'attempt-remaining' attempt.pk as remaining_url %}
@@ -80,5 +80,6 @@
     });
     setTimeout(() => location.reload(), (Number(form.dataset.expiresIn) + 1) * 1000);
   </script>
+  <script src="{% static 'attempts/focus.js' %}" defer></script>
 </body>
 </html>
