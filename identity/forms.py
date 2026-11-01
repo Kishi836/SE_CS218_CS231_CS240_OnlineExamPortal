@@ -6,6 +6,8 @@ from django.utils import timezone
 
 from repository.models import Role, User
 
+from . import lockout
+
 
 class RegistrationForm(forms.ModelForm):
     """Public Student registration form for FR-001."""
@@ -96,17 +98,14 @@ class EmailLoginForm(forms.Form):
         email = cleaned_data.get("email")
         password = cleaned_data.get("password")
         if email and password:
-            # NFR-012 -- TODO(Komal), using identity.lockout:
-            # 1. BEFORE authenticate(): if lockout.is_locked(email), raise
-            #    ValidationError("Too many failed sign-ins. Try again in 15 minutes.")  -- even if the password is right.
-            # 2. When authenticate() fails (None or inactive): lockout.record_failure(email), then the existing error.
-            # 3. On success: lockout.clear(email).
-            # Keep "Invalid email or password" for every other failure, so unknown and known emails look the same.
+            # NFR-012: checked before the password, so a locked account stays locked even with the right one.
+            if lockout.is_locked(email):
+                raise ValidationError(f"Too many failed sign-ins. Try again in {settings.SIGNIN_LOCK_MINUTES} minutes.")
             self.user_cache = authenticate(self.request, username=email, password=password)
-            if self.user_cache is None:
+            if self.user_cache is None or not self.user_cache.is_active:
+                lockout.record_failure(email)
                 raise ValidationError("Invalid email or password")
-            if not self.user_cache.is_active:
-                raise ValidationError("Invalid email or password")
+            lockout.clear(email)
         return cleaned_data
 
     def get_user(self):
