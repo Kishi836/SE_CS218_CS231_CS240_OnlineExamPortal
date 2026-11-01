@@ -2,7 +2,8 @@
 {% load tz %}
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
     <title>{{ exam.title }}</title>
   </head>
   <body>
@@ -59,6 +60,7 @@
     </form>
     {% elif exam.status == "PUBLISHED" %}
     <p><a href="{% url 'exam-schedule' exam.id %}">Schedule Examination</a></p>
+    <p><a href="{% url 'exam-integrity' exam.id %}">Integrity log</a></p>
     {% endif %}
 
     <p><a href="{% url 'exam-list' %}">Back to exams</a></p>

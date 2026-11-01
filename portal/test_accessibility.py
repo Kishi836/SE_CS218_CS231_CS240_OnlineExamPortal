@@ -5,14 +5,15 @@ in the markup. Manual, recorded in the PR description: a Lighthouse accessibilit
 attempt page with no AA violations, and completing EXM_1 using only Tab / Shift+Tab / arrows / Space / Enter.
 """
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
+from portal.test_responsive import full_pages
 from portal.testkit import World
+from repository.models import Answer
 
 CSS = Path(settings.BASE_DIR) / "portal/static/portal/site.css"
 
@@ -44,7 +45,7 @@ PAIRS = [
 
 class AccessibilityTests(TestCase):
     def setUp(self):
-        self.world = World(n_questions=3)
+        self.world = World(n_questions=4)  # 4, so the palette test can show all four states at once
         self.attempt = self.world.attempt()
         self.client.force_login(self.world.stu_a)
 
@@ -65,12 +66,16 @@ class AccessibilityTests(TestCase):
         ]
         for url in pages:
             with self.subTest(url=url):
-                response = self.client.get(url)
+                response = self.client.get(url, follow=True)  # the paper URL redirects to question 1 (FR-018)
                 self.assertContains(response, 'href="#main"', msg_prefix=f"{url}: skip link missing")
                 self.assertContains(response, 'id="main"', msg_prefix=f"{url}: <main id=\"main\"> missing")
 
+    def test_every_full_page_template_has_the_skip_link_target(self):
+        missing = [str(p.relative_to(settings.BASE_DIR)) for p in full_pages() if 'id="main"' not in p.read_text(encoding="utf-8")]
+        self.assertEqual(missing, [])
+
     def test_every_option_has_a_label(self):
-        html = self.client.get(reverse("attempt-paper", args=[self.attempt.pk])).content.decode()
+        html = self.client.get(reverse("attempt-paper", args=[self.attempt.pk]), follow=True).content.decode()
         radios = re.findall(r"<input[^>]*type=\"radio\"[^>]*>", html)
         self.assertTrue(radios)
         # Every radio sits inside a <label> (implicit labelling), so a screen reader reads the option text.
@@ -84,20 +89,15 @@ class AccessibilityTests(TestCase):
         self.assertIsNone(re.search(r"outline:\s*none", css), "site.css hides the focus outline somewhere")
 
     def test_timer_announces_politely(self):
-        response = self.client.get(reverse("attempt-paper", args=[self.attempt.pk]))
+        response = self.client.get(reverse("attempt-paper", args=[self.attempt.pk]), follow=True)
         self.assertContains(response, 'id="timer"')
         self.assertContains(response, 'aria-live="polite"')
 
-    @unittest.skip(
-        "TODO(Kartik): blocked on FR-018 (#97). Once question.html is on main, assert that each palette "
-        "link carries its state as visible text (Not visited / Not answered / Answered / Marked for review) "
-        "so state is never conveyed by colour alone (NFR-009 / WCAG 1.4.1)."
-    )
-    def test_timer_announces_politely_and_palette_states_are_not_colour_only(self):
-        """Palette links must expose their state as text, not only via CSS class colour."""
-        response = self.client.get(reverse("attempt-paper", args=[self.attempt.pk]))
-        html = response.content.decode()
-        # Each palette cell should carry one of the human-readable state labels.
-        state_labels = ["Not visited", "Not answered", "Answered", "Marked for review"]
-        for label in state_labels:
-            self.assertIn(label, html, f"Palette state '{label}' is missing — colour alone is not enough.")
+    def test_palette_states_are_not_colour_only(self):
+        """Palette links must expose their state as text, not only via CSS class colour (WCAG 1.4.1)."""
+        # One question in each state: Q1 opened by this request (Not answered), Q2 answered, Q3 marked, Q4 untouched.
+        Answer.objects.create(attempt=self.attempt, question=self.world.questions[1], option=self.world.right[1])
+        Answer.objects.create(attempt=self.attempt, question=self.world.questions[2], marked_for_review=True)
+        response = self.client.get(reverse("attempt-question", args=[self.attempt.pk, 1]))
+        for n, label in [(1, "Not answered"), (2, "Answered"), (3, "Marked for review"), (4, "Not visited")]:
+            self.assertContains(response, f"Question {n}, {label}</span>", msg_prefix="colour alone is not enough")

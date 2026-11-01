@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Course Roster</title>
   </head>
   <body>
@@ -40,6 +41,11 @@
             >
               {% csrf_token %}
               <button type="submit">Unenroll</button>
+            </form>
+            {% endif %}
+            {% if request.user.role == "ADMIN" %}
+            <form method="post" action="{% url 'student-erase' student.pk %}" onsubmit="return confirm('Erase this student’s personal data?');">
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit">Erase personal data</button>
             </form>
             {% endif %}
           </td>

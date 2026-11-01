@@ -60,7 +60,7 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": os.environ.get("OEP_DB_PATH", BASE_DIR / "db.sqlite3"),  # NFR-004's restart test uses a throwaway file
         # SAD 6 / NFR-001: WAL so readers never block the one writer; IMMEDIATE so a transaction that
         # reads then writes waits on the timeout instead of failing at once with "database is locked".
         "OPTIONS": {

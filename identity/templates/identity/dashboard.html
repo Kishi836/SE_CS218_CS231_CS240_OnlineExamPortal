@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard</title>
   </head>
   <body>
     {% include "_nav.html" %}
-  <main id="main">
+    <main id="main">
     <h1>Welcome, {{ user.full_name|default:user.email }}</h1>
     <p class="muted">Signed in as {{ user.email }} ({{ user.get_role_display }}).</p>
 
@@ -65,6 +65,56 @@
       </a>
       {% endif %}
     </div>
+
+    {% if user.role == "STUDENT" %}
+    {# FR-014: the three groups sit below the tiles. `groups` comes from attempts.services.dashboard_groups. #}
+    <section aria-labelledby="live-heading">
+      <h2 id="live-heading">Live</h2>
+      {% for exam in groups.live %}
+        <article>
+          <h3>{{ exam.title }}</h3>
+          <p>{{ exam.course.code }}</p>
+          <p>Closes at {{ exam.window_end|date:"Y-m-d H:i" }}</p>
+          <form method="post" action="{% url 'attempt-start' %}">
+            {% csrf_token %}
+            <input type="hidden" name="exam" value="{{ exam.pk }}" />
+            <button type="submit">Start exam</button>
+          </form>
+        </article>
+      {% empty %}
+        <p class="muted">No exam is open right now.</p>
+      {% endfor %}
+    </section>
+
+    <section aria-labelledby="upcoming-heading">
+      <h2 id="upcoming-heading">Upcoming</h2>
+      {% for exam in groups.upcoming %}
+        <article>
+          <h3>{{ exam.title }}</h3>
+          <p>{{ exam.course.code }}</p>
+          {% if exam.window_start %}
+            <p>Starts at {{ exam.window_start|date:"Y-m-d H:i" }}</p>
+          {% else %}
+            <p>Not scheduled yet</p>
+          {% endif %}
+        </article>
+      {% empty %}
+        <p class="muted">Nothing scheduled.</p>
+      {% endfor %}
+    </section>
+
+    <section aria-labelledby="completed-heading">
+      <h2 id="completed-heading">Completed</h2>
+      {% for exam in groups.completed %}
+        <article>
+          <h3>{{ exam.title }}</h3>
+          <p>{{ exam.course.code }}</p>
+        </article>
+      {% empty %}
+        <p class="muted">No completed exams yet.</p>
+      {% endfor %}
+    </section>
+    {% endif %}
     </main>
-</body>
+  </body>
 </html>

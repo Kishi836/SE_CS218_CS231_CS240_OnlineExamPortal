@@ -86,8 +86,9 @@ class ExamQuestionForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.exam = exam
 
+        # FR-009: superseded versions stay attached where they are but are never offered again.
         self.fields["questions"].queryset = Question.objects.filter(
-            course=exam.course
+            course=exam.course, retired=False
         ).order_by("id")
 
     def clean_questions(self):
