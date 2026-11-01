@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from identity.access import roles
-from repository.models import Attempt, Exam, Option, Role
+from repository.models import Attempt, Exam, Option, Question, Role
 from repository import audit
 
 from . import services
@@ -71,14 +71,7 @@ def paper(attempt):
 @require_GET
 def student_exam_list(request):
     """Show published exams belonging to courses the student is enrolled in."""
-    exams = (
-        Exam.objects.filter(
-            course__students=request.user,
-            status=Exam.Status.PUBLISHED,
-        )
-        .select_related("course")
-        .order_by("title")
-    )
+    exams = services.visible_exams(request.user).order_by("title")
 
     return render(
         request,
@@ -144,24 +137,34 @@ def attempt_paper(request, pk):
             {"attempt": attempt, "timed_out": timed_out},
         )
 
-    saved = dict(attempt.answers.values_list("question_id", "option_id"))
-    questions = [
-        {**question, "saved": saved.get(question["id"])}
-        for question in paper(attempt)
-    ]
-    expires_in = math.ceil(
-        (expires_at(attempt) - timezone.now()).total_seconds()
-    )
+    return redirect("attempt-question", attempt.pk, 1)
 
-    return render(
-        request,
-        "attempts/paper.html",
-        {
-            "attempt": attempt,
-            "questions": questions,
-            "expires_in": expires_in,
-        },
-    )
+
+@roles(Role.STUDENT)
+@require_GET
+def attempt_question(request, pk, n):
+    """FR-018: question `n` (1-based) of the Student's attempt, with the palette for the whole paper."""
+    attempt = close_if_expired(get_object_or_404(
+        Attempt, pk=pk, student=request.user))
+    if attempt.submitted_at:
+        # shows the submitted page
+        return redirect("attempt-paper", attempt.pk)
+
+    questions = paper(attempt)
+    if not 1 <= n <= len(questions):
+        raise Http404
+    question = questions[n - 1]
+
+    services.visit(attempt, question["id"])
+    states = services.palette(attempt, [q["id"] for q in questions])
+    saved = attempt.answers.get(question_id=question["id"])
+    expires_in = math.ceil(
+        (expires_at(attempt) - timezone.now()).total_seconds())
+    return render(request, "attempts/question.html", {
+        "attempt": attempt, "question": question, "n": n, "total": len(questions),
+        "cells": list(enumerate(states, start=1)), "saved": saved.option_id,
+        "marked": saved.marked_for_review, "expires_in": expires_in,
+    })
 
 
 @roles(Role.STUDENT)
@@ -175,22 +178,26 @@ def attempt_remaining(request, pk):
 @roles(Role.STUDENT)
 @require_POST
 def save_answer(request, pk):
-    """Save each answer as it is selected."""
+    """FR-019: save a response as it is selected. An empty option clears it; marked_for_review is "1" or "0"."""
     attempt = get_object_or_404(Attempt, pk=pk, student=request.user)
     question = request.POST.get("question", "")
     option = request.POST.get("option", "")
+    flag = request.POST.get("marked_for_review")
 
-    if not (question.isdigit() and option.isdigit()):
+    if not question.isdigit() or not (option == "" or option.isdigit()) or flag not in (None, "0", "1"):
         return JsonResponse(
-            {"detail": "A question and an option are required."},
+            {"detail": "A question is required, with an option id or an empty option to clear it."},
             status=400,
         )
 
     try:
-        services.save_answer(attempt, int(question), int(option))
+        services.save_answer(
+            attempt, int(question), int(
+                option) if option else None, None if flag is None else flag == "1"
+        )
     except AttemptClosed as refusal:
         return JsonResponse({"detail": str(refusal)}, status=409)
-    except Option.DoesNotExist:
+    except (Question.DoesNotExist, Option.DoesNotExist):
         return JsonResponse(
             {"detail": "That option does not belong to this question."},
             status=400,

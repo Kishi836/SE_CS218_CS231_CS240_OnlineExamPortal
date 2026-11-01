@@ -108,6 +108,7 @@ class AuditTests(TestCase):
                 "roll_number": "PES1UG24CS099",
                 "password1": "Passw0rd!A",
                 "password2": "Passw0rd!A",
+                "consent": "on",
             },
         )
         self.assertEqual(response.status_code, 302)
