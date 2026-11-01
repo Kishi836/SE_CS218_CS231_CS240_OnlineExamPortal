@@ -27,15 +27,14 @@ class TraceabilityTests(SimpleTestCase):
         covered = {fr for frs in TEST_PLAN.values() for fr in frs}
         self.assertEqual([fr for fr in ALL_FRS if fr not in covered], [])
 
-    def test_NFR_007_rtm_lists_all_118_test_plan_cases(self):
+    def test_NFR_007_rtm_lists_all_119_test_plan_cases(self):
         counts = {kind: sum(1 for i in TEST_PLAN if i.startswith(kind)) for kind in ("UT", "IT", "ST")}
-        self.assertEqual(counts, {"UT": 68, "IT": 37, "ST": 13})
+        self.assertEqual(counts, {"UT": 68, "IT": 38, "ST": 13})
 
     def test_NFR_007_every_case_is_automated_or_marked_manual_with_a_reason(self):
-        # 21 cases (1 Nov) still lack a test; 3 of them arrive with FR-030 (#96), the rest are Deliverable-3 work.
-        # Remove this skip when Deliverable-3's test-case update lands.
-        self.skipTest("Deliverable-3: automate the remaining Test Plan cases, then enable this gate")
-        missing = sorted(set(TEST_PLAN) - automated_ids() - set(MANUAL))
+        # FR-030's cases arrive with its pull request (#96); delete this exemption when it merges.
+        fr_030_pending = {"UT_068", "IT_036", "IT_037", "ST_013"}
+        missing = sorted(set(TEST_PLAN) - automated_ids() - set(MANUAL) - fr_030_pending)
         self.assertEqual(missing, [], "Test Plan cases with no automated test and no manual reason")
 
     def test_NFR_007_no_test_names_an_id_the_test_plan_does_not_have(self):

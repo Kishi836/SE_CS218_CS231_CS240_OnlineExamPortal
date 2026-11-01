@@ -23,7 +23,7 @@ class EvaluationTimeTests(TestCase):
                 option = self.world.right[i] if i < 60 else self.world.wrong[i]
                 save_answer(self.attempt, option.question_id, option.pk)
 
-    def test_NFR_002_100_question_attempt_is_evaluated_within_5_seconds(self):
+    def test_IT_030_NFR_002_100_question_attempt_is_evaluated_within_5_seconds(self):
         started = time.perf_counter()
         submit(self.attempt)
         elapsed = time.perf_counter() - started

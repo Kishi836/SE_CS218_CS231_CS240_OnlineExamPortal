@@ -111,6 +111,7 @@ TEST_PLAN = {
     "IT_035": ["FR-029"],
     "IT_036": ["FR-030"],
     "IT_037": ["FR-030"],
+    "IT_038": [],  # NFR-012 sign-in lockout (Test Plan v3.1); verifies no FR
     "ST_001": ["FR-001"],
     "ST_002": ["FR-002", "FR-003"],
     "ST_003": ["FR-004"],

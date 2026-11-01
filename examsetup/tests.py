@@ -104,12 +104,12 @@ class ExamAuthoringTests(TestCase):
     def login_as_faculty(self):
         self.client.force_login(self.faculty)
 
-    def test_ut028_exam_defaults_to_draft(self):
+    def test_UT_028_exam_defaults_to_draft(self):
         exam = self.create_exam()
         self.assertEqual(exam.status, Exam.Status.DRAFT)
         self.assertIsNone(exam.published_at)
 
-    def test_ut029_duration_must_be_positive(self):
+    def test_UT_029_duration_must_be_positive(self):
         self.login_as_faculty()
 
         for duration in ("0", "-30"):
@@ -132,7 +132,7 @@ class ExamAuthoringTests(TestCase):
                     "Duration must be a positive number of minutes",
                 )
 
-    def test_ut030_exam_policies_are_saved(self):
+    def test_UT_030_exam_policies_are_saved(self):
         exam = self.create_exam(
             negative_marking=False,
             shuffle_questions=True,
@@ -146,7 +146,7 @@ class ExamAuthoringTests(TestCase):
         self.assertTrue(exam.shuffle_options)
         self.assertEqual(exam.pass_mark_percent, Decimal("65.00"))
 
-    def test_ut031_pass_mark_must_be_between_zero_and_100(self):
+    def test_UT_031_pass_mark_must_be_between_zero_and_100(self):
         self.login_as_faculty()
 
         for pass_mark in ("150", "-10"):
