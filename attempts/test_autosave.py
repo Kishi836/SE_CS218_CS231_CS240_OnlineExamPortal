@@ -30,7 +30,7 @@ class AutosaveTests(TestCase):
     def test_UT_045_response_is_persisted_with_no_save_button(self):
         self.assertEqual(self.post(1, "right").status_code, 200)
         self.assertEqual(self.stored(1).option, self.world.right[0])
-        self.assertNotContains(self.client.get(reverse("attempt-paper", args=[self.attempt.pk])), ">Save<")
+        self.assertNotContains(self.client.get(reverse("attempt-paper", args=[self.attempt.pk]), follow=True), ">Save<")
 
     def test_UT_046_changing_a_response_keeps_one_row_with_the_new_value(self):
         self.post(3, "right")
@@ -42,7 +42,7 @@ class AutosaveTests(TestCase):
         self.post(3, "right")
         self.post(3, "")
         self.assertIsNone(self.stored(3).option)
-        self.assertContains(self.client.get(reverse("attempt-paper", args=[self.attempt.pk])), "Clear response")
+        self.assertContains(self.client.get(reverse("attempt-paper", args=[self.attempt.pk]), follow=True), "Clear response")
 
     def test_review_flag_is_set_kept_and_cleared(self):
         self.post(2, "right", marked_for_review="1")
@@ -65,8 +65,10 @@ class AutosaveTests(TestCase):
             self.post(n, "right")
         fresh = Client()  # the killed browser is gone; a new one signs in
         fresh.post(reverse("login"), {"email": self.world.stu_a.email, "password": PASSWORD})
-        response = fresh.get(reverse("attempt-paper", args=[self.attempt.pk]))
-        saved = [q["saved"] for q in response.context["questions"]]
+        saved = [
+            fresh.get(reverse("attempt-question", args=[self.attempt.pk, n])).context["saved"]
+            for n in range(1, 7)
+        ]
         self.assertEqual(saved, [o.pk for o in self.world.right[:3]] + [None] * 3)
 
     def test_submitted_attempt_refuses_changes_clears_and_flags(self):

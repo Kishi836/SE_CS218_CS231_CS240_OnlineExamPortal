@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ exam.title }} &middot; Integrity events</title></head>
+<body>
+  {% include "_nav.html" %}
+  <h1>{{ exam.title }} &middot; Integrity events</h1>
+  <p class="muted">Each row is the examination window losing focus, timed by the server. These are evidence for review, not a verdict.</p>
+  <table>
+    <thead><tr><th scope="col">Student</th><th scope="col">Roll number</th><th scope="col">Focus losses</th><th scope="col">Server times</th></tr></thead>
+    <tbody>
+      {% for attempt, events in attempt_events %}<tr><td>{{ attempt.student.full_name }}</td><td>{{ attempt.student.roll_number }}</td><td>{{ events|length }}</td><td>{% for event in events %}{{ event.occurred_at|date:"Y-m-d H:i:s" }}{% if not forloop.last %}, {% endif %}{% empty %}None{% endfor %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p><a href="{% url 'exam-detail' exam.id %}">Back to the examination</a></p>
+</body>
+</html>

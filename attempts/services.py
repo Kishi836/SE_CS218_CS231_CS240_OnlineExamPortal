@@ -24,6 +24,36 @@ def submit(attempt, at=None):
     attempt.refresh_from_db()
 
 
+NOT_VISITED, NOT_ANSWERED, ANSWERED, MARKED = "not-visited", "not-answered", "answered", "marked"
+
+
+def visit(attempt, question_id):
+    """FR-018: opening a question records the visit as an Answer row with no option, so it reads Not Answered."""
+    Answer.objects.get_or_create(attempt=attempt, question_id=question_id)
+
+
+def palette(attempt, question_ids):
+    """FR-018: one state per question, in paper order, derived only from the Answer rows the server holds (IT_021).
+
+    - no Answer row              -> NOT_VISITED
+    - row with marked_for_review -> MARKED (wins over answered / not answered)
+    - row with an option         -> ANSWERED
+    - row with no option         -> NOT_ANSWERED
+    """
+    answers = {a.question_id: a for a in attempt.answers.all()}  # one query for the whole paper
+    def state(question_id):
+        answer = answers.get(question_id)
+        if answer is None:
+            return NOT_VISITED
+        if answer.marked_for_review:
+            return MARKED
+        if answer.option_id is not None:
+            return ANSWERED
+        return NOT_ANSWERED
+
+    return [state(question_id) for question_id in question_ids]
+
+
 def result_visible(attempt):
     """FR-025: a Student sees a score only once the attempt is submitted and Faculty has published results."""
     return attempt.submitted_at is not None and attempt.exam.results_published
