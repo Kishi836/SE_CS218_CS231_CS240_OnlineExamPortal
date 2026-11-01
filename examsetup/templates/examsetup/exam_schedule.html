@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
     <title>Schedule {{ exam.title }}</title>
   </head>
   <body>
     {% include "_nav.html" %}
+  <main id="main">
     <h1>Schedule {{ exam.title }}</h1>
     <form method="post">
       {% csrf_token %}
@@ -23,5 +25,6 @@
       <button type="submit">Schedule examination</button>
     </form>
     <p><a href="{% url 'exam-detail' exam.id %}">Back to exam</a></p>
-  </body>
+    </main>
+</body>
 </html>

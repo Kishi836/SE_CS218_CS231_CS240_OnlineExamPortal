@@ -2,7 +2,7 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from attempts.services import result_visible
@@ -10,7 +10,7 @@ from examsetup.views import _faculty_exam_or_403
 from identity.access import roles
 from repository.models import Attempt, Role
 
-from .services import ResultsNotReady, set_results_published
+from .services import ResultsNotReady, scorecard, set_results_published
 
 
 @roles(Role.FACULTY)
@@ -52,3 +52,13 @@ def result_api(request, attempt_id):
             "passed": attempt.passed,
         }
     )
+
+
+@roles(Role.STUDENT)
+@require_GET
+def scorecard_page(request, attempt_id):
+    """FR-027: the Student's own scorecard. 403 for another Student's attempt or an unpublished result (FR-025)."""
+    attempt = get_object_or_404(Attempt.objects.select_related("exam"), pk=attempt_id)
+    if attempt.student_id != request.user.pk or not result_visible(attempt):
+        raise PermissionDenied
+    return render(request, "results/scorecard.html", {"attempt": attempt, "card": scorecard(attempt)})

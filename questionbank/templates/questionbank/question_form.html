@@ -1,9 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Create question</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ heading }}</title></head>
 <body>
   {% include "_nav.html" %}
-  <h1>Create a multiple-choice question</h1>
+  <main id="main">
+  <h1>{{ heading }}</h1>
+  {% if frozen %}
+    <p role="note" class="callout">This question is in a published examination or has been answered. Saving creates a new version; the examination keeps the current one unchanged.</p>
+  {% endif %}
   <form method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
@@ -29,8 +33,9 @@
         </p>
       {% endfor %}
     </fieldset>
-    <button type="submit">Create question</button>
+    <button type="submit">Save question</button>
   </form>
   <p><a href="{% url 'question-list' %}">Back to question bank</a></p>
+  </main>
 </body>
 </html>

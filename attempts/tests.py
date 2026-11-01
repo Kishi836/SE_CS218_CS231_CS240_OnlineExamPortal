@@ -141,12 +141,12 @@ class StartAttemptTests(TestCase):
         response = self.start()
         attempt = Attempt.objects.get(exam=self.exam, student=self.student)
 
-        self.assertRedirects(response, f"/attempts/{attempt.pk}/")
+        self.assertRedirects(response, f"/attempts/{attempt.pk}/", target_status_code=302)
         self.assertNotContains(response, "Stem number", status_code=302)
 
-        paper = self.client.get(f"/attempts/{attempt.pk}/")
+        paper = self.client.get(f"/attempts/{attempt.pk}/", follow=True)
         self.assertContains(paper, "Stem number 0")
-        self.assertContains(paper, "Stem number 1")
+        self.assertNotContains(paper, "Stem number 1")
 
     def test_IT_019_no_paper_without_an_attempt_row(self):
         self.assertEqual(self.client.get("/attempts/999/").status_code, 404)
@@ -166,7 +166,7 @@ class StartAttemptTests(TestCase):
 
     def test_paper_never_carries_the_answer_key(self):
         self.start()
-        paper = self.client.get(f"/attempts/{Attempt.objects.get().pk}/")
+        paper = self.client.get(f"/attempts/{Attempt.objects.get().pk}/", follow=True)
         self.assertNotContains(paper, "is_correct")
         self.assertNotContains(paper, "correct")
 

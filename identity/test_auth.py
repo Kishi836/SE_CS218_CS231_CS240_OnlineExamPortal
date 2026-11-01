@@ -18,6 +18,7 @@ class RegistrationTests(TestCase):
         "roll_number": "PES1UG24CS111",
         "password1": "Str0ng#Pass",
         "password2": "Str0ng#Pass",
+        "consent": "on",
     }
 
     def register(self, **changes):
@@ -79,7 +80,7 @@ class SignInTests(TestCase):
     def test_ST_001_register_sign_in_and_load_student_dashboard(self):
         response = self.client.post("/register/", {
             "full_name": "Arjun Rao", "email": "arjun.rao@pesu.pes.edu",
-            "roll_number": "PES1UG24CS111", "password1": "Str0ng#Pass", "password2": "Str0ng#Pass",
+            "roll_number": "PES1UG24CS111", "password1": "Str0ng#Pass", "password2": "Str0ng#Pass", "consent": "on",
         })
         self.assertRedirects(response, "/login/")
         response = self.sign_in("arjun.rao@pesu.pes.edu", "Str0ng#Pass", next="/student/")
