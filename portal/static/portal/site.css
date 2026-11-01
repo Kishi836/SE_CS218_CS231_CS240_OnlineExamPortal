@@ -158,3 +158,10 @@ li { margin: 6px 0; }
 [role="status"] { padding: 14px 18px; border-radius: 8px; background: var(--green-bg); color: var(--green); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+@media (max-width: 480px) {
+  .topbar, .topbar nav { flex-wrap: wrap; }
+  table { display: block; overflow-x: auto; }
+  #timer { float: none; position: sticky; }
+  body { overflow-wrap: anywhere; }
+}
