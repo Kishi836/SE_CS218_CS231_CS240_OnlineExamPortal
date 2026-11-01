@@ -1,13 +1,14 @@
 import json
 
 from django.contrib import messages
-from django.db import transaction
 from django.http import HttpResponseNotAllowed, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from identity.access import roles
 from repository.models import Question, Role
 
+from . import services
 from .forms import OptionFormSet, QuestionForm
 
 
@@ -17,20 +18,15 @@ def _forms_for_request(data, faculty):
     return question_form, option_formset
 
 
-def _save_question(question_form, option_formset, faculty):
-    with transaction.atomic():
-        question = question_form.save(commit=False)
-        question.created_by = faculty
-        question.save()
-        option_formset.instance = question
-        option_formset.save()
-    return question
+def _own_question_or_404(request, pk):
+    """A current (not superseded) question in one of this Faculty member's courses."""
+    return get_object_or_404(Question, pk=pk, retired=False, course__faculty=request.user)
 
 
 @roles(Role.FACULTY)
 def question_list(request):
     questions = (
-        Question.objects.filter(course__faculty=request.user)
+        Question.objects.filter(course__faculty=request.user, retired=False)
         .select_related("course")
         .order_by("course__code", "id")
         .distinct()
@@ -42,14 +38,59 @@ def question_list(request):
 def question_create(request):
     question_form, option_formset = _forms_for_request(request.POST or None, request.user)
     if request.method == "POST" and question_form.is_valid() and option_formset.is_valid():
-        _save_question(question_form, option_formset, request.user)
+        services.create(question_form, option_formset, request.user)
         messages.success(request, "Question created")
         return redirect("question-list")
     return render(
         request,
         "questionbank/question_form.html",
-        {"form": question_form, "option_formset": option_formset},
+        {"form": question_form, "option_formset": option_formset, "heading": "Create a multiple-choice question"},
     )
+
+
+@roles(Role.FACULTY)
+def question_edit(request, pk):
+    """FR-009: edit in place, or create a new version when the question is already in use."""
+    original = _own_question_or_404(request, pk)
+    frozen = services.in_use(original)
+    question_form = QuestionForm(request.POST or None, instance=Question.objects.get(pk=pk), faculty=request.user)
+    question_form.fields["course"].disabled = True  # a version stays in its course
+    # Prefill only on GET: on POST, a row equal to its initial value counts as "unchanged" and is skipped.
+    option_formset = OptionFormSet(
+        request.POST or None,
+        instance=Question(),
+        initial=None if request.method == "POST" else list(original.options.order_by("id").values("text", "is_correct")),
+    )
+    if request.method == "POST" and question_form.is_valid() and option_formset.is_valid():
+        saved = services.edit(original, question_form, option_formset, request.user)
+        if saved.pk == original.pk:
+            messages.success(request, "Question updated")
+        else:
+            messages.success(request, f"This question is in use, so your edit was saved as version {saved.version}")
+        return redirect("question-list")
+    return render(
+        request,
+        "questionbank/question_form.html",
+        {
+            "form": question_form,
+            "option_formset": option_formset,
+            "heading": f"Edit question (version {original.version})",
+            "frozen": frozen,
+        },
+    )
+
+
+@roles(Role.FACULTY)
+@require_POST
+def question_delete(request, pk):
+    question = _own_question_or_404(request, pk)
+    try:
+        services.delete(question, request.user)
+    except services.QuestionInUse as refusal:
+        messages.error(request, str(refusal))
+    else:
+        messages.success(request, "Question deleted")
+    return redirect("question-list")
 
 
 def _api_form_data(payload):
@@ -101,5 +142,5 @@ def question_api(request):
     question_form, option_formset = _forms_for_request(_api_form_data(payload), request.user)
     if not question_form.is_valid() or not option_formset.is_valid():
         return JsonResponse({"errors": _api_errors(question_form, option_formset)}, status=400)
-    question = _save_question(question_form, option_formset, request.user)
+    question = services.create(question_form, option_formset, request.user)
     return JsonResponse({"id": question.id}, status=201)

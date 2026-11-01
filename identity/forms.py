@@ -2,6 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from repository.models import Role, User
 
@@ -25,6 +26,11 @@ class RegistrationForm(forms.ModelForm):
         label="Roll number",
         required=True,
         error_messages={"required": "Roll number is required"},
+    )
+    consent = forms.BooleanField(
+        label="I consent to my name, email and roll number being used only to run my examinations.",
+        required=True,
+        error_messages={"required": "You must consent to register"},
     )
 
     class Meta:
@@ -63,6 +69,7 @@ class RegistrationForm(forms.ModelForm):
         user = super().save(commit=False)
         user.role = Role.STUDENT
         user.set_password(self.cleaned_data["password1"])
+        user.consent_given_at = timezone.now()
         if commit:
             user.save()
         return user

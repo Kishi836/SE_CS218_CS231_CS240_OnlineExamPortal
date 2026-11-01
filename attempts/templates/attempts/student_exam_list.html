@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
     <title>Available Exams</title>
   </head>
   <body>
     {% include "_nav.html" %}
+    <main id="main">
     <h1>Available Exams</h1>
 
     {% if exams %}
@@ -23,5 +25,6 @@
     {% endif %}
 
     <p><a href="{% url 'student-dashboard' %}">Back to dashboard</a></p>
+    </main>
   </body>
 </html>

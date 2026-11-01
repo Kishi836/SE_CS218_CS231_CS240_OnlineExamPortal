@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ attempt.exam.title }} &middot; Scorecard</title></head>
+<body>
+  {% include "_nav.html" %}
+  <main id="main">
+  <h1>{{ attempt.exam.title }} &middot; Scorecard</h1>
+
+  <p>Total: {{ card.score }} / {{ card.total_marks }}</p>
+  <p>Percentage: {{ card.percentage }}%</p>
+  <p>Outcome: {% if card.passed %}Pass{% else %}Fail{% endif %}</p>
+
+  <table>
+    <caption>Marks on each question</caption>
+    <thead><tr><th scope="col">#</th><th scope="col">Question</th><th scope="col">Your answer</th><th scope="col">Marks</th></tr></thead>
+    <tbody>
+      {% for row in card.rows %}
+        <tr>
+          <td>{{ row.n }}</td>
+          <td>{{ row.stem }}</td>
+          <td>{% if row.chosen %}{{ row.chosen }}{% else %}Not answered{% endif %}</td>
+          <td>{{ row.marks }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p><a href="{% url 'student-dashboard' %}">Back to dashboard</a></p>
+  </main>
+</body>
+</html>
