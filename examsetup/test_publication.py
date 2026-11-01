@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from repository.models import Course, Exam, Option, Question, Role, User
+from repository.models import AuditEntry, Course, Exam, Option, Question, Role, User
 
 
 class PublicationTests(TestCase):
@@ -60,6 +60,8 @@ class PublicationTests(TestCase):
         exam.refresh_from_db()
         self.assertEqual(exam.status, Exam.Status.PUBLISHED)
         self.assertGreaterEqual(exam.published_at, before)
+        self.assertTrue(AuditEntry.objects.filter(entity="Exam", entity_id=exam.pk, action="publish",
+                                                  actor=self.faculty).exists())  # FR-030
 
     def test_IT_015_exactly_the_selected_questions_attach_in_the_chosen_order(self):
         chosen = [self.bank[7], self.bank[2], self.bank[9], self.bank[0], self.bank[4]]
