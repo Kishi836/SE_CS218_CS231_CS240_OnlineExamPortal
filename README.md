@@ -37,6 +37,13 @@ the stored answer key, and results are released when Faculty publishes them.
 | [`docs/Code_Coverage_Report.pdf`](docs/Code_Coverage_Report.pdf) | Statement coverage of the whole suite |
 | [`docs/Branch_Coverage_Report.pdf`](docs/Branch_Coverage_Report.pdf) | Branch coverage of the whole suite |
 
+### Sprint outcome videos
+
+| Video | Shows |
+|---|---|
+| [`docs/videos/Sprint1_Outcome.mp4`](docs/videos/Sprint1_Outcome.mp4) (1 min) | Sprint 1 goal: register, course and enrollment, MCQ authoring, exam build, publish and schedule, a timed attempt, automatic scoring |
+| [`docs/videos/Sprint2_Outcome.mp4`](docs/videos/Sprint2_Outcome.mp4) (2 min) | Sprint 2 goal: dashboard groups, one question at a time with the palette, autosave and resume, question versioning, results publication and scorecard, focus-loss events, audit trail, lockout, 360 px |
+
 ## Backlog
 
 GitHub Project **Online Exam Portal - Backlog**: one issue per SRS requirement (`FR-001` … `FR-030`,
