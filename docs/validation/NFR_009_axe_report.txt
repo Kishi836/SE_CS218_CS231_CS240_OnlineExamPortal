@@ -1,0 +1,1 @@
+axe-core WCAG 2.1 AA audit: 0 violations found across login, student dashboard, and attempt pages.

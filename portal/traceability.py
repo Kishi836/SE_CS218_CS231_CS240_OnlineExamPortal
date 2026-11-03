@@ -1,6 +1,6 @@
 """NFR-007: the Requirements Traceability Matrix in code -- every Test Plan case ID and the FRs it verifies.
 
-Source of truth: Documents/Test_Plan.pdf (built from Portal_Docs_Build/source/markdown/Test_Plan.md), the
+Source of truth: docs/Test_Plan.pdf (built from Portal_Docs_Build/source/markdown/Test_Plan.md), the
 "Test case description" column of each case. portal/test_traceability.py checks this table against the
 test suite, so the RTM cannot silently go stale.
 """

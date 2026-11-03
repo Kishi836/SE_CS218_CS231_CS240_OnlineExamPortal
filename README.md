@@ -16,16 +16,33 @@ the stored answer key, and results are released when Faculty publishes them.
 | Kartik Basavaraj Meti | Frontend & UX |
 | Komal S Sajja | QA & Documentation |
 
-## Documents
+## Documents (`docs/`)
 
 | Document | Contents |
 |---|---|
-| [`Documents/SRS.pdf`](Documents/SRS.pdf) | **Software Requirements Specification** — table of 30 functional and 14 non-functional requirements in the course template (ID, type, description, priority, acceptance criteria, rationale, comments) |
-| [`Documents/Use_Case_Diagram.pdf`](Documents/Use_Case_Diagram.pdf) | **Use Case Diagram** — UML diagram of the 4 actors and 13 use cases, their «include» / «extend» relationships, and the requirements and test cases behind each use case |
-| [`Documents/Use_Case_Flow.pdf`](Documents/Use_Case_Flow.pdf) | **Use Case Flow** — main success scenario, alternate and exception flows and business rules for UC-01 … UC-13, and the end-to-end examination lifecycle |
-| [`Documents/SAD.pdf`](Documents/SAD.pdf) | **Software Architecture Document** — layered architecture and why, UML component diagram, interfaces, technology stack (Django + SQLite), deployment |
-| [`Documents/Test_Plan.pdf`](Documents/Test_Plan.pdf) | **Test Plan** — 118 unit, integration and system test cases in the course template, 8–10 per use case, covering all 30 FRs |
-| [`Documents/Sprint_Plan.pdf`](Documents/Sprint_Plan.pdf) | **Sprint Plan** — backlog, story points, owners, Sprint 1 (19–23 Oct) and Sprint 2 (26–30 Oct) |
+| [`docs/SRS.pdf`](docs/SRS.pdf) | **Software Requirements Specification** (IEEE 830) — overall description, use case diagram, 30 functional and 14 non-functional requirements in the course template, security objectives and requirements |
+| [`docs/Use_Case_Diagram.pdf`](docs/Use_Case_Diagram.pdf) | **Use Case Diagram** — UML diagram of the 4 actors and 13 use cases, their «include» / «extend» relationships, and the requirements and test cases behind each use case |
+| [`docs/Use_Case_Flow.pdf`](docs/Use_Case_Flow.pdf) | **Use Case Flow** — main success scenario, alternate and exception flows and business rules for UC-01 … UC-13, and the end-to-end examination lifecycle |
+| [`docs/SAD.pdf`](docs/SAD.pdf) | **Software Architecture Document** — layered architecture and why, UML component diagram, traceability, security architecture, sequence diagrams, API design, error handling, deployment |
+| [`docs/Test_Plan.pdf`](docs/Test_Plan.pdf) | **Test Plan** — methodology, deliverables, environment, security validation plan, and 119 unit, integration and system test cases with their results |
+| [`docs/Sprint_Plan.pdf`](docs/Sprint_Plan.pdf) | **Sprint Plan** — backlog, story points, owners, Sprint 1 (19–23 Oct) and Sprint 2 (26 Oct – 1 Nov) |
+| [`docs/Deviations.pdf`](docs/Deviations.pdf) | **Deviations register** — every departure from the SRS, SAD, Test Plan or Sprint Plan, and why |
+
+### Test reports
+
+| Report | Contents |
+|---|---|
+| [`docs/Unit_Test_Report.pdf`](docs/Unit_Test_Report.pdf) | The 68 unit test cases, run with `manage.py test -v 2` |
+| [`docs/System_Validation_Report.pdf`](docs/System_Validation_Report.pdf) | ST_001–ST_013 and the NFR checks against the running system in Chrome, Edge and Firefox; screenshots in [`docs/validation/`](docs/validation/) |
+| [`docs/Code_Coverage_Report.pdf`](docs/Code_Coverage_Report.pdf) | Statement coverage of the whole suite |
+| [`docs/Branch_Coverage_Report.pdf`](docs/Branch_Coverage_Report.pdf) | Branch coverage of the whole suite |
+
+### Sprint outcome videos
+
+| Video | Shows |
+|---|---|
+| [`docs/videos/Sprint1_Outcome.mp4`](docs/videos/Sprint1_Outcome.mp4) (1 min) | Sprint 1 goal: register, course and enrollment, MCQ authoring, exam build, publish and schedule, a timed attempt, automatic scoring |
+| [`docs/videos/Sprint2_Outcome.mp4`](docs/videos/Sprint2_Outcome.mp4) (2 min) | Sprint 2 goal: dashboard groups, one question at a time with the palette, autosave and resume, question versioning, results publication and scorecard, focus-loss events, audit trail, lockout, 360 px |
 
 ## Backlog
 
