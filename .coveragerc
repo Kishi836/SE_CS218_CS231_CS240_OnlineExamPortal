@@ -1,0 +1,16 @@
+# Deliverable 3: Code Coverage and Branch Coverage reports.
+# Run: coverage run manage.py test -v 2  then  coverage report
+[run]
+branch = True
+source = .
+omit =
+    */migrations/*
+    */test*.py
+    manage.py
+    portal/asgi.py
+    portal/wsgi.py
+    loadtest/*
+
+[report]
+show_missing = True
+skip_empty = True
