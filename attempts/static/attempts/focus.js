@@ -16,9 +16,18 @@
   };
 
   let away = false;
+  // A page being unloaded (moving to another question, submitting) is hidden too; that is not a focus
+  // loss. pagehide fires before the unload's visibilitychange; pageshow clears it on a back-forward restore.
+  let leaving = false;
+  window.addEventListener("pagehide", () => {
+    leaving = true;
+  });
+  window.addEventListener("pageshow", () => {
+    leaving = false;
+  });
 
   const onAway = () => {
-    if (!away) {
+    if (!away && !leaving) {
       away = true;
       report();
     }
