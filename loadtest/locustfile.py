@@ -116,10 +116,19 @@ class Student(HttpUser):
 
     @task(5)
     def answer(self):
-        """Submit an answer using IDs rendered in the paper HTML."""
+        """Open a random question page from the palette (FR-018), then answer it."""
         attempt_id = self.get_attempt_id()
         if not attempt_id:
             return
+
+        total = len(set(re.findall(rf"/attempts/{attempt_id}/q/(\d+)/", self.paper_html)))
+        if total:
+            page = self.client.get(
+                f"/attempts/{attempt_id}/q/{random.randint(1, total)}/",
+                name="question page",
+            )
+            if page.ok:
+                self.paper_html = page.text
 
         matches = re.findall(
             r'<input\b(?=[^>]*\bdata-question="(\d+)")'
