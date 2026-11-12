@@ -9,6 +9,20 @@
     {% include "_nav.html" %}
   <main id="main">
     <h1>Schedule {{ exam.title }}</h1>
+    {% for message in messages %}<p role="status" class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+    <p class="muted">
+      {{ exam.course.code }} &middot; {{ exam.duration_minutes }} minutes &middot; {{ exam.total_marks }} marks
+      &middot; pass mark {{ exam.pass_mark_percent }}% &middot; negative marking {{ exam.negative_marking|yesno:"on,off" }}
+    </p>
+
+    <h2>The paper</h2>
+    <ol>
+      {% for item in questions %}
+      <li>{{ item.question.stem }} <span class="muted">({{ item.question.positive_marks }} marks)</span></li>
+      {% endfor %}
+    </ol>
+
+    <h2>Window</h2>
     <form method="post">
       {% csrf_token %}
       {{ form.non_field_errors }}
@@ -22,9 +36,22 @@
         {{ form.window_end }}
         {{ form.window_end.errors }}
       </p>
-      <button type="submit">Schedule examination</button>
+      <button type="submit">{% if exam.status == "SUBMITTED" %}Schedule and publish{% else %}Save the new window{% endif %}</button>
     </form>
-    <p><a href="{% url 'exam-detail' exam.id %}">Back to exam</a></p>
+
+    {% if exam.status == "SUBMITTED" %}
+    <h2>Return to Faculty</h2>
+    <form method="post" action="{% url 'admin-exam-return' exam.id %}">
+      {% csrf_token %}
+      <p>
+        <label for="return-note">What should Faculty change?</label>
+        <textarea id="return-note" name="note" required maxlength="2000"></textarea>
+      </p>
+      <button type="submit">Return as Draft</button>
+    </form>
+    {% endif %}
+
+    <p><a href="{% url 'admin-exam-queue' %}">Back to examinations</a></p>
     </main>
 </body>
 </html>

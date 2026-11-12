@@ -20,14 +20,9 @@ urlpatterns = [
         views.exam_add_questions,
         name="exam-add-questions",
     ),
-    path(
-        "faculty/exams/<int:exam_id>/publish/",
-        views.exam_publish,
-        name="exam-publish",
-    ),
-    path(
-        "faculty/exams/<int:exam_id>/schedule/",
-        views.exam_schedule,
-        name="exam-schedule",
-    ),
+    path("faculty/exams/<int:exam_id>/submit/", views.exam_submit, name="exam-submit"),
+    # CR-02: the Administrator schedules (and so publishes) the papers Faculty send.
+    path("admin/exams/", views.admin_exam_queue, name="admin-exam-queue"),
+    path("admin/exams/<int:exam_id>/schedule/", views.admin_exam_schedule, name="admin-exam-schedule"),
+    path("admin/exams/<int:exam_id>/return/", views.admin_exam_return, name="admin-exam-return"),
 ]

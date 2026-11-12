@@ -1,0 +1,53 @@
+<!doctype html>
+{% load tz %}
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Examinations</title></head>
+<body>
+  {% include "_nav.html" %}
+  <main id="main">
+    <h1>Examinations</h1>
+    {% for message in messages %}<p role="status" class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+
+    <h2>Waiting to be scheduled</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Paper</th><th scope="col">Course</th><th scope="col">Questions</th><th scope="col">Marks</th><th scope="col">Duration</th><th scope="col"></th></tr></thead>
+        <tbody>
+          {% for exam in waiting %}
+          <tr>
+            <td>{{ exam.title }}</td>
+            <td>{{ exam.course.code }}</td>
+            <td>{{ exam.n_questions }}</td>
+            <td>{{ exam.total_marks }}</td>
+            <td>{{ exam.duration_minutes }} min</td>
+            <td><a class="btn" href="{% url 'admin-exam-schedule' exam.id %}">Review and schedule</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="muted">No papers waiting. Faculty send them from their examination page.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Scheduled</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Paper</th><th scope="col">Course</th><th scope="col">Opens</th><th scope="col">Closes</th><th scope="col"></th></tr></thead>
+        <tbody>
+          {% for exam in scheduled %}
+          <tr>
+            <td>{{ exam.title }}</td>
+            <td>{{ exam.course.code }}</td>
+            <td>{{ exam.window_start|localtime|date:"Y-m-d H:i T"|default:"Not set" }}</td>
+            <td>{{ exam.window_end|localtime|date:"Y-m-d H:i T"|default:"Not set" }}</td>
+            <td><a href="{% url 'admin-exam-schedule' exam.id %}">Change window</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="muted">Nothing scheduled yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+</body>
+</html>

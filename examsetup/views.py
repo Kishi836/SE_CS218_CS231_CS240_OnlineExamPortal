@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -173,59 +173,84 @@ def exam_add_questions(request, exam_id):
 
 @roles(Role.FACULTY)
 @require_POST
-def exam_publish(request, exam_id):
+def exam_submit(request, exam_id):
+    """CR-02: Faculty sends a finished Draft to the Administrator, who schedules it. The paper is then locked."""
     exam = _faculty_exam_or_403(request, exam_id)
 
     if exam.status != Exam.Status.DRAFT:
-        raise PermissionDenied(
-            "Only Draft exams can be published."
-        )
+        raise PermissionDenied("Only a Draft can be sent to the Administrator.")
     if exam.course.archived:
         raise PermissionDenied("This course is archived")
     if not ExamQuestion.objects.filter(exam=exam).exists():
-        messages.error(
-            request, "Add at least one question before publishing."
-        )
+        messages.error(request, "Add at least one question before sending the paper.")
         return redirect("exam-detail", exam_id=exam.pk)
 
-    old_status = exam.status
-    exam.status = Exam.Status.PUBLISHED
-    exam.published_at = timezone.now()
-
+    exam.status = Exam.Status.SUBMITTED
+    exam.review_note = ""
     with transaction.atomic():
-        exam.save(update_fields=["status", "published_at"])
-        audit.record(
-            request.user,
-            "publish",
-            exam,
-            {"status": [old_status, exam.status]},
-        )
+        exam.save(update_fields=["status", "review_note"])
+        audit.record(request.user, "submit", exam, {"status": [Exam.Status.DRAFT, exam.status]})
 
-    messages.success(request, "Exam published.")
+    messages.success(request, "Paper sent to the Administrator for scheduling.")
     return redirect("exam-detail", exam_id=exam.pk)
 
 
-@roles(Role.FACULTY)
+@roles(Role.ADMIN)
+@require_GET
+def admin_exam_queue(request):
+    """CR-02: papers waiting to be scheduled, and the ones already scheduled."""
+    exams = Exam.objects.select_related("course").annotate(n_questions=Count("examquestion"))
+    return render(request, "examsetup/admin_exam_queue.html", {
+        "waiting": exams.filter(status=Exam.Status.SUBMITTED).order_by("id"),
+        "scheduled": exams.filter(status=Exam.Status.PUBLISHED).order_by("-window_start"),
+    })
+
+
+@roles(Role.ADMIN)
 @require_http_methods(["GET", "POST"])
-def exam_schedule(request, exam_id):
-    exam = _faculty_exam_or_403(request, exam_id)
-    if exam.status != Exam.Status.PUBLISHED:
-        raise PermissionDenied("Only Published exams can be scheduled.")
+def admin_exam_schedule(request, exam_id):
+    """CR-02 / FR-012 / FR-013: the Administrator sets the window. Scheduling a paper Faculty sent publishes it."""
+    exam = get_object_or_404(Exam.objects.select_related("course"), pk=exam_id)
+    if exam.status == Exam.Status.DRAFT:
+        raise PermissionDenied("Faculty has not sent this paper yet.")
 
     if request.method == "POST":
+        old_status = exam.status
         form = ExamScheduleForm(request.POST, instance=exam)
         if form.is_valid():
             with transaction.atomic():
-                updated = form.save()
-                audit.record(request.user, "schedule", updated)
-
-            messages.success(request, "Examination scheduled")
-            return redirect("exam-detail", exam_id=exam.pk)
+                exam = form.save(commit=False)
+                if exam.status == Exam.Status.SUBMITTED:
+                    exam.status = Exam.Status.PUBLISHED
+                    exam.published_at = timezone.now()
+                exam.save()
+                audit.record(request.user, "schedule", exam, {
+                    "status": [old_status, exam.status],
+                    "window": [exam.window_start.isoformat(), exam.window_end.isoformat()],
+                })
+            messages.success(request, f"Examination scheduled: {exam.title}")
+            return redirect("admin-exam-queue")
     else:
         form = ExamScheduleForm(instance=exam)
 
-    return render(
-        request,
-        "examsetup/exam_schedule.html",
-        {"exam": exam, "form": form},
-    )
+    questions = exam.examquestion_set.select_related("question").order_by("order")
+    return render(request, "examsetup/exam_schedule.html", {"exam": exam, "form": form, "questions": questions})
+
+
+@roles(Role.ADMIN)
+@require_POST
+def admin_exam_return(request, exam_id):
+    """CR-02: the Administrator sends a paper back to Faculty as a Draft, with the reason."""
+    exam = get_object_or_404(Exam, pk=exam_id, status=Exam.Status.SUBMITTED)
+    note = request.POST.get("note", "").strip()
+    if not note:
+        messages.error(request, "Say what Faculty should change before returning the paper.")
+        return redirect("admin-exam-schedule", exam_id=exam.pk)
+    exam.status = Exam.Status.DRAFT
+    exam.review_note = note[:2000]
+    with transaction.atomic():
+        exam.save(update_fields=["status", "review_note"])
+        audit.record(request.user, "return", exam,
+                     {"status": [Exam.Status.SUBMITTED, Exam.Status.DRAFT], "note": exam.review_note})
+    messages.success(request, f"{exam.title} returned to Faculty.")
+    return redirect("admin-exam-queue")

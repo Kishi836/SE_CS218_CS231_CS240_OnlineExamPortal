@@ -1,4 +1,7 @@
-"""FR-010 - FR-012: paper assembly and publication (Test Plan UT_032, UT_033, IT_015, IT_016, ST_006)."""
+"""FR-010 - FR-012: paper assembly and publication (Test Plan UT_032, UT_033, IT_015, IT_016, ST_006).
+
+CR-02: Faculty sends the finished paper to the Administrator, whose scheduling publishes it.
+"""
 from decimal import Decimal
 
 from django.test import TestCase
@@ -13,6 +16,7 @@ class PublicationTests(TestCase):
 
     def setUp(self):
         self.faculty = User.objects.create_user("fac.a@pes.edu", "Passw0rd!A", full_name="Fac A", role=Role.FACULTY)
+        self.admin = User.objects.create_user("adm.a@pes.edu", "Passw0rd!A", full_name="Adm A", role=Role.ADMIN)
         self.stu_a = User.objects.create_user(
             "stu.a@pesu.pes.edu", "Passw0rd!A", full_name="Stu A", role=Role.STUDENT, roll_number="PES1UG24CS001"
         )
@@ -43,9 +47,19 @@ class PublicationTests(TestCase):
         self.client.post(reverse("exam-add-questions", args=[exam.pk]), {"questions": [q.pk for q in questions]})
         return exam
 
-    def publish(self, exam):
+    def send(self, exam):
         self.client.force_login(self.faculty)
-        return self.client.post(reverse("exam-publish", args=[exam.pk]))
+        return self.client.post(reverse("exam-submit", args=[exam.pk]))
+
+    def schedule(self, exam):
+        self.client.force_login(self.admin)
+        return self.client.post(reverse("admin-exam-schedule", args=[exam.pk]),
+                                {"window_start": "2026-12-01T10:00", "window_end": "2026-12-01T12:00"})
+
+    def publish(self, exam):
+        """CR-02: publication is Faculty sending the paper and the Administrator scheduling it."""
+        self.send(exam)
+        return self.schedule(exam)
 
     def test_UT_032_draft_exam_is_invisible_to_students(self):
         exam = self.create_exam_with(self.bank[:5])
@@ -53,15 +67,53 @@ class PublicationTests(TestCase):
         self.assertNotContains(self.client.get(reverse("student-exam-list")), "EXM_1")
         self.assertIn(self.client.get(reverse("student-exam-detail", args=[exam.pk])).status_code, (403, 404))
 
-    def test_UT_033_publishing_moves_the_exam_out_of_draft_with_a_server_timestamp(self):
+    def test_UT_033_sending_then_scheduling_publishes_the_exam_with_a_server_timestamp(self):
         exam = self.create_exam_with(self.bank[:5])
+        self.send(exam)
+        exam.refresh_from_db()
+        self.assertEqual((exam.status, exam.published_at), (Exam.Status.SUBMITTED, None))
         before = timezone.now()
-        self.publish(exam)
+        self.schedule(exam)
         exam.refresh_from_db()
         self.assertEqual(exam.status, Exam.Status.PUBLISHED)
         self.assertGreaterEqual(exam.published_at, before)
-        self.assertTrue(AuditEntry.objects.filter(entity="Exam", entity_id=exam.pk, action="publish",
-                                                  actor=self.faculty).exists())  # FR-030
+        audit = AuditEntry.objects.filter(entity="Exam", entity_id=exam.pk)  # FR-030
+        self.assertTrue(audit.filter(action="submit", actor=self.faculty).exists())
+        self.assertTrue(audit.filter(action="schedule", actor=self.admin).exists())
+
+    def test_CR_02_a_sent_paper_is_locked_and_invisible_until_scheduled(self):
+        exam = self.create_exam_with(self.bank[:5])
+        self.send(exam)
+        self.assertEqual(self.client.get(reverse("exam-edit", args=[exam.pk])).status_code, 403)
+        self.client.force_login(self.stu_a)
+        self.assertNotContains(self.client.get(reverse("student-exam-list")), "EXM_1")
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse("admin-exam-queue")), "EXM_1")
+
+    def test_CR_02_only_the_administrator_schedules(self):
+        exam = self.create_exam_with(self.bank[:5])
+        self.send(exam)
+        self.client.force_login(self.faculty)
+        self.assertEqual(self.client.get(reverse("admin-exam-queue")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("admin-exam-schedule", args=[exam.pk])).status_code, 403)
+        draft = self.create_exam_with(self.bank[5:7])
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse("admin-exam-schedule", args=[draft.pk])).status_code, 403)
+
+    def test_CR_02_returned_paper_is_a_draft_again_with_the_administrators_note(self):
+        exam = self.create_exam_with(self.bank[:5])
+        self.send(exam)
+        self.client.force_login(self.admin)
+        self.client.post(reverse("admin-exam-return", args=[exam.pk]), {"note": ""})
+        exam.refresh_from_db()
+        self.assertEqual(exam.status, Exam.Status.SUBMITTED)  # a return must say what to change
+        self.client.post(reverse("admin-exam-return", args=[exam.pk]), {"note": "Add two harder questions"})
+        exam.refresh_from_db()
+        self.assertEqual((exam.status, exam.review_note), (Exam.Status.DRAFT, "Add two harder questions"))
+        self.assertTrue(AuditEntry.objects.filter(entity="Exam", entity_id=exam.pk, action="return",
+                                                  actor=self.admin).exists())
+        self.client.force_login(self.faculty)
+        self.assertContains(self.client.get(reverse("exam-detail", args=[exam.pk])), "Add two harder questions")
 
     def test_IT_015_exactly_the_selected_questions_attach_in_the_chosen_order(self):
         chosen = [self.bank[7], self.bank[2], self.bank[9], self.bank[0], self.bank[4]]

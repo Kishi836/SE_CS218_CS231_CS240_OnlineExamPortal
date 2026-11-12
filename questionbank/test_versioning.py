@@ -115,9 +115,9 @@ class VersioningTests(TestCase):
         )
         for i, q in enumerate(new):
             ExamQuestion.objects.create(exam=exam, question=q, order=i)
-        self.client.post(reverse("exam-publish", args=[exam.pk]))
+        self.client.post(reverse("exam-submit", args=[exam.pk]))  # CR-02: a paper sent to the Administrator is frozen
         exam.refresh_from_db()
-        self.assertEqual(exam.status, Exam.Status.PUBLISHED)
+        self.assertEqual(exam.status, Exam.Status.SUBMITTED)
 
         self.edit(new[0], "Q0 edited")
         self.assertEqual(list(exam.questions.values_list("stem", flat=True)), ["Q0", "Q1", "Q2"])
