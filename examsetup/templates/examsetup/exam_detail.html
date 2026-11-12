@@ -18,7 +18,10 @@
     <p>
       <strong>Course:</strong> {{ exam.course.code }} — {{ exam.course.title }}
     </p>
-    <p><strong>Status:</strong> {{ exam.get_status_display }}</p>
+    <p><strong>Status:</strong> {{ exam.get_status_display }}{% if exam.status == "SUBMITTED" %} &middot; waiting for the Administrator to schedule it{% endif %}</p>
+    {% if exam.status == "DRAFT" and exam.review_note %}
+    <p role="status" class="error"><strong>Returned by the Administrator:</strong> {{ exam.review_note }}</p>
+    {% endif %}
     <p><strong>Duration:</strong> {{ exam.duration_minutes }} minutes</p>
     <p><strong>Total marks:</strong> {{ exam.total_marks }}</p>
     <p><strong>Pass mark:</strong> {{ exam.pass_mark_percent }}%</p>
@@ -66,13 +69,13 @@
     <p><a href="{% url 'exam-edit' exam.id %}">Edit Draft</a></p>
     <p><a href="{% url 'exam-add-questions' exam.id %}">Add Questions</a></p>
 
-    <form method="post" action="{% url 'exam-publish' exam.id %}">
+    <form method="post" action="{% url 'exam-submit' exam.id %}">
       {% csrf_token %}
-      <button type="submit">Publish Exam</button>
+      <button type="submit">Send to Admin for scheduling</button>
     </form>
+    <p class="muted">Once sent, the paper is locked. The Administrator schedules it, which publishes it to your Students, or returns it with a note.</p>
 
     {% elif exam.status == "PUBLISHED" %}
-    <p><a href="{% url 'exam-schedule' exam.id %}">Schedule Examination</a></p>
     <p><a href="{% url 'exam-integrity' exam.id %}">Integrity log</a></p>
 
     <p>

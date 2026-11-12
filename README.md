@@ -67,6 +67,11 @@ python manage.py runserver
 Sign in at <http://127.0.0.1:8000/login/>. Django's admin site is at `/django-admin/`, because `/admin/` is reserved for the Administrator role's pages.
 Run the tests with `python manage.py test`.
 
+**Demo data.** On a fresh database, `python manage.py migrate` then `python manage.py seed_demo` creates
+`adm.a@pes.edu`, `fac.a@pes.edu` and `stu.a`/`stu.b`/`stu.c@pesu.pes.edu`, all with password `1234567890`,
+and papers in every state: returned Draft, Sent to Admin, live, upcoming, and past with results published.
+Keep it off any shared server. The 200-user load test is in `loadtest/locustfile.py`.
+
 ### Where code goes
 
 | App | SAD component | Requirements |
@@ -74,9 +79,11 @@ Run the tests with `python manage.py test`.
 | `repository` | Exam Repository: **every model lives here** | — |
 | `identity` | Identity & Enrollment Manager | FR-001 – FR-006, FR-015 |
 | `questionbank` | Question Bank Manager | FR-007 – FR-009 |
-| `examsetup` | Exam Setup Manager | FR-010 – FR-013 |
+| `examsetup` | Exam Setup Manager | FR-010 – FR-013 (Faculty send, the Administrator schedules: CR-02) |
 | `attempts` | Attempt Session Manager | FR-015 – FR-021, FR-029 |
 | `evaluation` | Evaluation Engine | FR-022 – FR-024 |
+| `results` | Results Manager | FR-025 – FR-027 |
+| `integrity` | Integrity & Audit Monitor | FR-028, FR-030 |
 
 **Every view must declare who may use it** (FR-003). Access is denied by default, so a view without a decorator returns 403 to everyone:
 

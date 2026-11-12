@@ -105,6 +105,7 @@ class Option(models.Model):
 class Exam(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
+        SUBMITTED = "SUBMITTED", "Sent to Admin"  # CR-02: Faculty sends the paper, the Administrator schedules it
         PUBLISHED = "PUBLISHED", "Published"
 
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams")
@@ -121,6 +122,7 @@ class Exam(models.Model):
     window_start = models.DateTimeField(null=True, blank=True)
     window_end = models.DateTimeField(null=True, blank=True)
     results_published = models.BooleanField(default=False)  # FR-025/026
+    review_note = models.TextField(blank=True)  # CR-02: why the Administrator returned the paper to Faculty
     questions = models.ManyToManyField(Question, through="ExamQuestion", related_name="exams")
 
     def __str__(self):

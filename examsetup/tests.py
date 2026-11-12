@@ -3,7 +3,6 @@ from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
 
 from repository.models import (
     Course,
@@ -283,31 +282,29 @@ class ExamAuthoringTests(TestCase):
             1,
         )
 
-    def test_publish_sets_status_and_timestamp(self):
+    def test_send_to_admin_sets_status_without_publishing(self):
         self.login_as_faculty()
         exam = self.create_exam()
         ExamQuestion.objects.create(
             exam=exam, question=self.question1, order=0
         )
 
-        before_publish = timezone.now()
         response = self.client.post(
-            reverse("exam-publish", args=[exam.pk])
+            reverse("exam-submit", args=[exam.pk])
         )
 
         self.assertRedirects(
             response, reverse("exam-detail", args=[exam.pk])
         )
         exam.refresh_from_db()
-        self.assertEqual(exam.status, Exam.Status.PUBLISHED)
-        self.assertIsNotNone(exam.published_at)
-        self.assertGreaterEqual(exam.published_at, before_publish)
+        self.assertEqual(exam.status, Exam.Status.SUBMITTED)
+        self.assertIsNone(exam.published_at)  # CR-02: the Administrator's scheduling publishes it
 
-    def test_publishing_without_questions_is_blocked(self):
+    def test_sending_without_questions_is_blocked(self):
         self.login_as_faculty()
         exam = self.create_exam()
 
-        self.client.post(reverse("exam-publish", args=[exam.pk]))
+        self.client.post(reverse("exam-submit", args=[exam.pk]))
         exam.refresh_from_db()
 
         self.assertEqual(exam.status, Exam.Status.DRAFT)

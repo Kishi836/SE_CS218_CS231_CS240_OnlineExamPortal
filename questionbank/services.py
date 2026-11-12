@@ -14,7 +14,8 @@ class QuestionInUse(Exception):
 def in_use(question):
     """Frozen once it is in a published exam or any Student has answered it."""
     return (
-        question.exams.filter(status=Exam.Status.PUBLISHED).exists()
+        # CR-02: a paper waiting for the Administrator is frozen too, so it can't change under review.
+        question.exams.exclude(status=Exam.Status.DRAFT).exists()
         or Answer.objects.filter(question=question).exists()
     )
 
@@ -84,8 +85,8 @@ def delete(question, faculty):
     """FR-009 / IT_014: refuse to delete a question in use; otherwise remove it from drafts and delete it."""
     if Answer.objects.filter(question=question).exists():
         raise QuestionInUse("This question has been attempted and cannot be deleted")
-    if question.exams.filter(status=Exam.Status.PUBLISHED).exists():
-        raise QuestionInUse("This question is in a published examination and cannot be deleted")
+    if question.exams.exclude(status=Exam.Status.DRAFT).exists():
+        raise QuestionInUse("This question is in an examination sent for scheduling or published, and cannot be deleted")
     ExamQuestion.objects.filter(question=question).delete()
     question.options.all().delete()
     if question.previous_id:  # deleting the newest version brings the one before it back into the bank
