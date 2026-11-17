@@ -18,11 +18,21 @@
     <p><strong>Pass mark:</strong> {{ exam.pass_mark_percent }}%</p>
     <p><strong>Instructions:</strong> {{ exam.instructions|default:"None" }}</p>
 
+    {% if state == "live" or state == "in-progress" %}
     <form method="post" action="{% url 'attempt-start' %}">
       {% csrf_token %}
       <input type="hidden" name="exam" value="{{ exam.pk }}" />
-      <button type="submit">Start exam</button>
+      <button type="submit">{% if state == "live" %}Start exam{% else %}Resume exam{% endif %}</button>
     </form>
+    {% elif state == "upcoming" %}
+    <p role="status" class="callout">{% if exam.window_start %}Opens at {{ exam.window_start|date:"Y-m-d H:i" }}.{% else %}Not scheduled yet.{% endif %}</p>
+    {% elif state == "closed" %}
+    <p role="status" class="callout">This examination closed at {{ exam.window_end|date:"Y-m-d H:i" }}.</p>
+    {% elif result_visible %}
+    <p role="status">You have submitted this examination. <a href="{% url 'scorecard' attempt.pk %}">View scorecard</a></p>
+    {% else %}
+    <p role="status">You have submitted this examination. Results not yet published.</p>
+    {% endif %}
 
     <p><a href="{% url 'student-exam-list' %}">Back to available exams</a></p>
     </main>

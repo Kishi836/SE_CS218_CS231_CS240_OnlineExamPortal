@@ -25,6 +25,18 @@
         <span class="muted">Create a course with its code, title and semester.</span>
         <span class="go">Create course</span>
       </a>
+      <a class="tile" href="{% url 'admin-exam-queue' %}">
+        <span class="meta">FR-012 · FR-013 · CR-02</span>
+        <strong>Examinations</strong>
+        <span class="muted">Papers Faculty sent for scheduling: schedule and publish, or return with a note.</span>
+        <span class="go">Open examinations</span>
+      </a>
+      <a class="tile" href="{% url 'audit-log' %}">
+        <span class="meta">FR-030</span>
+        <strong>Audit log</strong>
+        <span class="muted">Who changed what and when, filtered by entity and ID.</span>
+        <span class="go">Open audit log</span>
+      </a>
       {% elif user.role == "FACULTY" %}
       <a class="tile" href="{% url 'faculty-courses' %}">
         <span class="meta">FR-005</span>
@@ -109,6 +121,7 @@
         <article>
           <h3>{{ exam.title }}</h3>
           <p>{{ exam.course.code }}</p>
+          {% if exam.scorecard_id %}<p><a href="{% url 'scorecard' exam.scorecard_id %}">View scorecard</a></p>{% endif %}
         </article>
       {% empty %}
         <p class="muted">No completed exams yet.</p>

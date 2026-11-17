@@ -90,10 +90,25 @@ def student_exam_detail(request, exam_id):
     if not exam.course.students.filter(pk=request.user.pk).exists():
         raise PermissionDenied
 
+    # Offer only the action that applies, by server time -- the same rules start() enforces.
+    attempt = Attempt.objects.filter(exam=exam, student=request.user).first()
+    now = timezone.now()
+    if attempt and close_if_expired(attempt).submitted_at:
+        state = "submitted"
+    elif attempt:
+        state = "in-progress"
+    elif exam.window_start is None or exam.window_end is None or now < exam.window_start:
+        state = "upcoming"
+    elif now >= exam.window_end:
+        state = "closed"
+    else:
+        state = "live"
+
     return render(
         request,
         "attempts/student_exam_detail.html",
-        {"exam": exam},
+        {"exam": exam, "state": state, "attempt": attempt,
+         "result_visible": state == "submitted" and result_visible(attempt)},
     )
 
 
