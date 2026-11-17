@@ -32,7 +32,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 24px;
+  gap: 12px 16px;
   padding: 18px 0;
   margin-bottom: 40px;
   border-bottom: 1px solid var(--line);
@@ -40,7 +40,7 @@ body {
 .brand { font: 500 20px/1 var(--serif); letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
 .topbar nav a {
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
   color: var(--ink);
   text-decoration: none;
@@ -113,6 +113,17 @@ button:active, .btn:active { transform: scale(0.98); }
 .btn-ghost, .who button { background: transparent; color: var(--ink); border-color: var(--line); padding: 5px 12px; font-weight: 500; }
 .btn-ghost:hover, .who button:hover { background: #f1f0ed; }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+/* Text for screen readers only (palette states, table action labels). */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* FR-018 question palette. Each state differs in fill or border style, not colour alone (NFR-009). */
+.palette { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.palette .cell { min-width: 2.25em; padding: 4px 8px; text-align: center; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.palette .not-answered { background: var(--red-bg); border-color: var(--red); }
+.palette .answered { background: var(--green-bg); border-color: var(--green); font-weight: 600; }
+.palette .marked { background: var(--yellow-bg); border-color: var(--yellow); border-style: dashed; }
+.palette [aria-current="page"] { outline: 2px solid var(--ink); outline-offset: 2px; }
+.qnav { display: flex; gap: 8px; margin: 16px 0; }
 .skip-link { position: absolute; left: -9999px; }
 .skip-link:focus { left: 16px; top: 16px; z-index: 10; padding: 8px 12px; background: var(--surface); }
 
@@ -137,7 +148,7 @@ fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 16px 20p
 fieldset label { font-weight: 400; font-size: 15px; }
 
 /* Lists and tables */
-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 16px 0; }
+table { position: relative; width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 16px 0; }
 th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: #f7f6f3; }
 tr:last-child td { border-bottom: 0; }
@@ -158,6 +169,14 @@ li { margin: 6px 0; }
 }
 #paper fieldset legend { font-weight: 600; padding: 0 6px; }
 [role="status"] { padding: 14px 18px; border-radius: 8px; background: var(--green-bg); color: var(--green); }
+[role="status"].error, .msg-error { background: var(--red-bg); color: var(--red); }
+[role="status"].warning, .msg-warning { background: var(--yellow-bg); color: var(--yellow); }
+.callout, [role="status"].callout { padding: 14px 18px; border-radius: 8px; background: var(--blue-bg); color: var(--blue); }
+.table-wrap { overflow-x: auto; }
+.actions form { display: inline; margin: 0 0 0 12px; }
+.link-danger { padding: 0; border: 0; background: none; color: var(--red); font-weight: 500; text-decoration: underline; }
+.link-danger:hover { background: none; color: var(--ink); }
+form p > input[type="checkbox"] { align-self: flex-start; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
@@ -166,4 +185,5 @@ li { margin: 6px 0; }
   table { display: block; overflow-x: auto; }
   #timer { float: none; position: sticky; }
   body { overflow-wrap: anywhere; }
+  th, td { overflow-wrap: normal; min-width: 7em; }
 }

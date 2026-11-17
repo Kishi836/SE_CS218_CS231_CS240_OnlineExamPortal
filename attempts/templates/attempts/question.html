@@ -27,8 +27,10 @@
     </fieldset>
   </form>
 
-  {% if n > 1 %}<a href="{% url 'attempt-question' attempt.pk n|add:'-1' %}">Previous</a>{% endif %}
-  {% if n < total %}<a href="{% url 'attempt-question' attempt.pk n|add:'1' %}">Next</a>{% endif %}
+  <nav aria-label="Previous and next question" class="qnav">
+    {% if n > 1 %}<a class="btn btn-ghost" href="{% url 'attempt-question' attempt.pk n|add:'-1' %}">&larr; Previous</a>{% endif %}
+    {% if n < total %}<a class="btn btn-ghost" href="{% url 'attempt-question' attempt.pk n|add:'1' %}">Next &rarr;</a>{% endif %}
+  </nav>
 
   <form method="post" action="{% url 'attempt-submit' attempt.pk %}">
     {% csrf_token %}

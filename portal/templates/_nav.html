@@ -1,7 +1,7 @@
 {% load static %}
 <a class="skip-link" href="#main">Skip to content</a>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
-<link rel="stylesheet" href="{% static 'portal/site.css' %}">
+<link rel="stylesheet" href="{% static 'portal/site.css' %}?v=7">
 <header class="topbar">
   <a class="brand" href="{% if user.is_authenticated %}{% url 'home' %}{% else %}{% url 'login' %}{% endif %}">Online Exam Portal</a>
   <nav aria-label="Main">

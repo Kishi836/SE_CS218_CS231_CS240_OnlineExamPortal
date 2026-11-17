@@ -41,7 +41,7 @@ def audit_log(request):
     entity_id = request.GET.get("entity_id", "").strip()
 
     if entity:
-        entries = entries.filter(entity=entity)
+        entries = entries.filter(entity__iexact=entity)
 
     if entity_id.isdigit():
         entries = entries.filter(entity_id=int(entity_id))

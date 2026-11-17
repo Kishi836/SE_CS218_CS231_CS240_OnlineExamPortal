@@ -223,3 +223,15 @@ class AuditEntry(models.Model):
     def delete(self, *args, **kwargs):
         """Audit entries cannot be deleted."""
         raise AppendOnly("The audit log is append-only")
+
+    @property
+    def changes_text(self):
+        """The changes as people read them: `score: — → 3.00` rather than the stored JSON."""
+        parts = []
+        for field, value in self.changes.items():
+            if isinstance(value, list) and len(value) == 2:
+                old, new = ("—" if v is None else v for v in value)
+                parts.append(f"{field}: {old} → {new}")
+            else:
+                parts.append(f"{field}: {value}")
+        return "; ".join(parts) or "—"

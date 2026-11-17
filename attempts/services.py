@@ -117,10 +117,12 @@ def dashboard_groups(student, now=None):
     """
     now = now or timezone.now()
     groups = {"upcoming": [], "live": [], "completed": []}
-    submitted = set(
-        Attempt.objects.filter(student=student, submitted_at__isnull=False).values_list("exam_id", flat=True)
+    submitted = dict(
+        Attempt.objects.filter(student=student, submitted_at__isnull=False).values_list("exam_id", "id")
     )
     for exam in visible_exams(student).order_by("window_start", "title"):
+        # FR-027: link the scorecard only once Faculty has published results (FR-025).
+        exam.scorecard_id = submitted.get(exam.id) if exam.results_published else None
         if exam.id in submitted:
             groups["completed"].append(exam)
         elif exam.window_start is None or exam.window_end is None:
